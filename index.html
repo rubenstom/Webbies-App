@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ScrollSnap — Screenshot to Scroll Video</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mp4-muxer@5.1.3/build/mp4-muxer.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>ScrollSnap</h1>
+    <p class="tagline">Turn screenshots into scroll animations</p>
+  </header>
+
+  <main>
+    <div class="workspace">
+      <!-- Left: Controls -->
+      <aside class="controls-panel">
+        <section class="control-group">
+          <h3>Image</h3>
+          <label class="upload-btn" id="uploadLabel">
+            <input type="file" id="imageUpload" accept="image/*" hidden>
+            <span class="upload-icon">+</span>
+            <span>Upload Screenshot</span>
+          </label>
+        </section>
+
+        <section class="control-group">
+          <h3>Background</h3>
+          <div class="bg-type-tabs">
+            <button class="bg-tab active" data-bg="solid">Solid</button>
+            <button class="bg-tab" data-bg="gradient">Gradient</button>
+            <button class="bg-tab" data-bg="blur">Blur</button>
+          </div>
+          <div class="bg-options" id="bgSolidOptions">
+            <label>Color
+              <input type="color" id="bgColor" value="#1a1a2e">
+            </label>
+          </div>
+          <div class="bg-options hidden" id="bgGradientOptions">
+            <label>Color 1
+              <input type="color" id="gradColor1" value="#667eea">
+            </label>
+            <label>Color 2
+              <input type="color" id="gradColor2" value="#764ba2">
+            </label>
+            <label>Angle
+              <input type="range" id="gradAngle" min="0" max="360" value="135">
+              <span class="range-val" id="gradAngleVal">135°</span>
+            </label>
+          </div>
+          <div class="bg-options hidden" id="bgBlurOptions">
+            <label>Blur
+              <input type="range" id="blurAmount" min="10" max="80" value="40">
+              <span class="range-val" id="blurAmountVal">40px</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="control-group">
+          <h3>Placeholder</h3>
+          <label>Aspect Ratio
+            <select id="aspectRatio">
+              <option value="0.4706">8:17 (iPhone)</option>
+              <option value="0.5">1:2</option>
+              <option value="0.5625">9:16 (Story)</option>
+              <option value="0.6">3:5</option>
+              <option value="0.6667">2:3 (Vertical)</option>
+              <option value="0.7">7:10 (Poster)</option>
+              <option value="0.75">3:4</option>
+              <option value="0.8">4:5 (IG Portrait)</option>
+              <option value="1">1:1 (Square)</option>
+              <option value="1.25">5:4</option>
+              <option value="1.3333">4:3</option>
+              <option value="1.5">3:2</option>
+              <option value="1.6">16:10 (MacBook)</option>
+              <option value="1.7778">16:9 (Widescreen)</option>
+              <option value="2.3333">21:9 (Ultrawide)</option>
+            </select>
+          </label>
+          <label>Size
+            <input type="range" id="placeholderSize" min="30" max="90" value="70">
+            <span class="range-val" id="placeholderSizeVal">70%</span>
+          </label>
+          <label>Corners
+            <input type="range" id="cornerRadius" min="0" max="40" value="12">
+            <span class="range-val" id="cornerRadiusVal">12px</span>
+          </label>
+          <label>Shadow
+            <input type="range" id="shadowStrength" min="0" max="100" value="50">
+            <span class="range-val" id="shadowStrengthVal">50%</span>
+          </label>
+          <label>Blur
+            <input type="range" id="shadowBlur" min="0" max="100" value="40">
+            <span class="range-val" id="shadowBlurVal">40px</span>
+          </label>
+          <label>Offset Y
+            <input type="range" id="shadowOffsetY" min="-50" max="50" value="8">
+            <span class="range-val" id="shadowOffsetYVal">8px</span>
+          </label>
+          <label>Offset X
+            <input type="range" id="shadowOffsetX" min="-50" max="50" value="0">
+            <span class="range-val" id="shadowOffsetXVal">0px</span>
+          </label>
+          <label>Color
+            <input type="color" id="shadowColor" value="#000000">
+          </label>
+        </section>
+
+        <section class="control-group">
+          <h3>Canvas</h3>
+          <label>Output Size
+            <select id="canvasPreset">
+              <option value="720x1280">720 x 1280 (9:16 HD)</option>
+              <option value="1080x1920">1080 x 1920 (9:16 FHD)</option>
+              <option value="1080x1350">1080 x 1350 (4:5 IG)</option>
+              <option value="1080x1080">1080 x 1080 (1:1)</option>
+              <option value="1200x1200">1200 x 1200 (1:1 HQ)</option>
+              <option value="1200x628">1200 x 628 (OG / Link)</option>
+              <option value="1280x720">1280 x 720 (16:9 HD)</option>
+              <option value="1920x1080">1920 x 1080 (16:9 FHD)</option>
+              <option value="2560x1440">2560 x 1440 (16:9 QHD)</option>
+              <option value="3840x2160">3840 x 2160 (16:9 4K)</option>
+              <option value="2160x3840">2160 x 3840 (9:16 4K)</option>
+            </select>
+          </label>
+        </section>
+
+        <section class="control-group">
+          <h3>Animation</h3>
+          <label>Duration
+            <input type="range" id="duration" min="2" max="30" value="8" step="0.5">
+            <span class="range-val" id="durationVal">8s</span>
+          </label>
+          <label>Default Easing
+            <select id="defaultEasing">
+              <option value="easeInOut">Ease In-Out</option>
+              <option value="linear">Linear</option>
+              <option value="easeIn">Ease In</option>
+              <option value="easeOut">Ease Out</option>
+              <option value="easeInOutCubic">Cubic In-Out</option>
+              <option value="easeInOutQuart">Quart In-Out</option>
+            </select>
+          </label>
+        </section>
+      </aside>
+
+      <!-- Center: Canvas -->
+      <div class="canvas-area">
+        <div class="canvas-wrapper">
+          <canvas id="previewCanvas"></canvas>
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon">&#x1F5BC;</div>
+            <p>Drop a screenshot here<br>or use the upload button</p>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="timeline-container">
+          <div class="playback-controls">
+            <button id="playBtn" class="play-btn" title="Play/Pause">
+              <svg id="playIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              <svg id="pauseIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="hidden">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+              </svg>
+            </button>
+            <span class="time-display" id="timeDisplay">0:00 / 0:08</span>
+          </div>
+          <div class="timeline" id="timeline">
+            <div class="timeline-track" id="timelineTrack">
+              <div class="timeline-progress" id="timelineProgress"></div>
+              <div class="scrubber" id="scrubber"></div>
+              <!-- Keyframes will be added dynamically -->
+            </div>
+            <div class="keyframe-labels" id="keyframeLabels"></div>
+          </div>
+          <div class="timeline-actions">
+            <button id="addKeyframeBtn" class="small-btn" title="Add keyframe at current time">+ Keyframe</button>
+            <button id="removeKeyframeBtn" class="small-btn" title="Remove selected keyframe">- Keyframe</button>
+          </div>
+        </div>
+
+        <!-- Keyframe Editor -->
+        <div class="keyframe-editor hidden" id="keyframeEditor">
+          <h4>Keyframe <span id="kfIndex"></span></h4>
+          <label>Scroll Position
+            <input type="range" id="kfScrollPos" min="0" max="100" value="0">
+            <span class="range-val" id="kfScrollPosVal">0%</span>
+          </label>
+          <label>Easing to Next
+            <select id="kfEasing">
+              <option value="easeInOut">Ease In-Out</option>
+              <option value="linear">Linear</option>
+              <option value="easeIn">Ease In</option>
+              <option value="easeOut">Ease Out</option>
+              <option value="easeInOutCubic">Cubic In-Out</option>
+              <option value="easeInOutQuart">Quart In-Out</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <!-- Right: Export -->
+      <aside class="export-panel">
+        <section class="control-group">
+          <h3>Export</h3>
+          <label>Resolution
+            <select id="exportRes">
+              <option value="1x">1x (1080p)</option>
+              <option value="2x">2x (4K)</option>
+            </select>
+          </label>
+          <label>Frame Rate
+            <select id="exportFps">
+              <option value="30">30 fps</option>
+              <option value="60">60 fps</option>
+            </select>
+          </label>
+          <button id="exportBtn" class="export-btn" disabled>
+            Export MP4
+          </button>
+          <div class="export-progress hidden" id="exportProgress">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <span class="progress-text" id="progressText">Preparing...</span>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>
