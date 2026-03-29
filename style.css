@@ -12,6 +12,8 @@
   --text-secondary: #86868b;
   --accent: #6366f1;
   --accent-hover: #4f46e5;
+  --ui-btn: #868686;
+  --ui-btn-hover: #6a6a6a;
   --radius: 12px;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
@@ -55,8 +57,7 @@ main {
 }
 
 /* Panels */
-.controls-panel,
-.export-panel {
+.controls-panel {
   background: var(--surface);
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -64,22 +65,29 @@ main {
   flex-shrink: 0;
   position: sticky;
   top: 20px;
+  width: 260px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
 }
 
-.controls-panel {
-  width: 240px;
-}
-
+/* Hide the old export panel (now merged into controls) */
 .export-panel {
-  width: 200px;
+  display: none;
 }
 
 .control-group {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
 }
 
 .control-group:last-child {
-  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.control-group + .control-group {
+  padding-top: 16px;
 }
 
 .control-group h3 {
@@ -102,8 +110,7 @@ main {
   white-space: nowrap;
 }
 
-.control-group select,
-.control-group input[type="color"] {
+.control-group select {
   font-size: 12px;
   padding: 4px 8px;
   border: 1px solid var(--border);
@@ -111,25 +118,15 @@ main {
   background: var(--bg);
   color: var(--text);
   cursor: pointer;
-}
-
-.control-group select {
   min-width: 0;
   max-width: 140px;
-}
-
-input[type="color"] {
-  width: 32px;
-  height: 28px;
-  padding: 2px;
-  cursor: pointer;
 }
 
 input[type="range"] {
   width: 70px;
   flex-shrink: 1;
   min-width: 50px;
-  accent-color: var(--accent);
+  accent-color: #999;
   cursor: pointer;
 }
 
@@ -158,8 +155,8 @@ input[type="range"] {
 }
 
 .upload-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--ui-btn);
+  color: var(--text);
 }
 
 .upload-icon {
@@ -177,17 +174,18 @@ input[type="range"] {
 /* Background tabs */
 .bg-type-tabs {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   margin-bottom: 10px;
   background: var(--bg);
   border-radius: 8px;
   padding: 3px;
+  flex-wrap: wrap;
 }
 
 .bg-tab {
   flex: 1;
-  padding: 5px;
-  font-size: 11px;
+  padding: 4px 2px;
+  font-size: 10px;
   border: none;
   background: transparent;
   border-radius: 6px;
@@ -207,6 +205,18 @@ input[type="range"] {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.sub-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.upload-btn-sm {
+  padding: 6px 10px;
+  font-size: 12px;
+  justify-content: center;
 }
 
 /* Canvas area */
@@ -283,7 +293,7 @@ input[type="range"] {
   height: 34px;
   border-radius: 50%;
   border: none;
-  background: var(--accent);
+  background: var(--ui-btn);
   color: white;
   cursor: pointer;
   display: flex;
@@ -294,7 +304,7 @@ input[type="range"] {
 }
 
 .play-btn:hover {
-  background: var(--accent-hover);
+  background: var(--ui-btn-hover);
 }
 
 .time-display {
@@ -321,7 +331,7 @@ input[type="range"] {
   top: 0;
   left: 0;
   height: 100%;
-  background: rgba(99, 102, 241, 0.15);
+  background: rgba(150, 150, 150, 0.15);
   border-radius: 8px 0 0 8px;
   pointer-events: none;
 }
@@ -331,7 +341,7 @@ input[type="range"] {
   top: -2px;
   width: 3px;
   height: 36px;
-  background: var(--accent);
+  background: var(--ui-btn);
   border-radius: 2px;
   cursor: ew-resize;
   transform: translateX(-1.5px);
@@ -341,7 +351,7 @@ input[type="range"] {
 
 .scrubber:hover,
 .scrubber.dragging {
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 4px rgba(130, 130, 130, 0.2);
 }
 
 .keyframe-marker {
@@ -349,7 +359,7 @@ input[type="range"] {
   top: 50%;
   width: 14px;
   height: 14px;
-  background: var(--accent);
+  background: var(--ui-btn);
   border: 2px solid var(--surface);
   border-radius: 50%;
   transform: translate(-50%, -50%);
@@ -363,7 +373,7 @@ input[type="range"] {
 }
 
 .keyframe-marker.selected {
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 0 0 3px rgba(130, 130, 130, 0.3);
   transform: translate(-50%, -50%) scale(1.2);
 }
 
@@ -396,8 +406,8 @@ input[type="range"] {
 }
 
 .small-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--ui-btn);
+  color: var(--text);
 }
 
 /* Keyframe editor */
@@ -434,13 +444,37 @@ input[type="range"] {
   background: var(--bg);
 }
 
-/* Export */
+/* Export (now in toolbar) */
+.export-section .export-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--text);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+
+.export-section .export-btn:hover:not(:disabled) {
+  background: #333;
+}
+
+.export-section .export-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Legacy export-btn (in the old export-panel, kept for compatibility) */
 .export-btn {
   width: 100%;
   padding: 12px;
   border: none;
   border-radius: 8px;
-  background: var(--accent);
+  background: var(--text);
   color: white;
   font-size: 14px;
   font-weight: 600;
@@ -450,11 +484,11 @@ input[type="range"] {
 }
 
 .export-btn:hover:not(:disabled) {
-  background: var(--accent-hover);
+  background: #333;
 }
 
 .export-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
@@ -471,7 +505,7 @@ input[type="range"] {
 
 .progress-fill {
   height: 100%;
-  background: var(--accent);
+  background: var(--ui-btn);
   border-radius: 3px;
   width: 0%;
   transition: width 0.3s;
@@ -484,6 +518,101 @@ input[type="range"] {
   display: block;
 }
 
+/* Color swatches */
+.color-swatch {
+  width: 32px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: inline-block;
+  flex-shrink: 0;
+  transition: box-shadow 0.15s;
+}
+
+.color-swatch:hover {
+  box-shadow: 0 0 0 2px rgba(130, 130, 130, 0.3);
+}
+
+/* Color Picker */
+.cp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.3);
+}
+
+.cp-popup {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  padding: 16px;
+  width: 260px;
+}
+
+.cp-body {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cp-sv {
+  border-radius: 6px;
+  cursor: crosshair;
+  display: block;
+}
+
+.cp-hue {
+  border-radius: 6px;
+  cursor: pointer;
+  display: block;
+}
+
+.cp-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cp-preview {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.cp-hex {
+  flex: 1;
+  font-size: 13px;
+  font-family: monospace;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  min-width: 0;
+}
+
+.cp-ok {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background: var(--text);
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cp-ok:hover {
+  background: #333;
+}
+
 /* Utilities */
 .hidden {
   display: none !important;
@@ -491,31 +620,20 @@ input[type="range"] {
 
 /* Drop zone highlight */
 body.dragover .canvas-wrapper {
-  outline: 3px dashed var(--accent);
+  outline: 3px dashed var(--ui-btn);
   outline-offset: -3px;
 }
 
 /* Responsive */
-@media (max-width: 1100px) {
+@media (max-width: 900px) {
   .workspace {
     flex-direction: column;
     align-items: center;
   }
-  .controls-panel,
-  .export-panel {
+  .controls-panel {
     width: 100%;
     max-width: 560px;
     position: static;
-  }
-  .controls-panel {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0 20px;
-  }
-}
-
-@media (max-width: 600px) {
-  .controls-panel {
-    grid-template-columns: 1fr;
+    max-height: none;
   }
 }
