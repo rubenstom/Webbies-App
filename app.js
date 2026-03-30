@@ -1073,6 +1073,60 @@ function lzwEncode(pixels, minCodeSize) {
 }
 
 // ============================================================
+// ============================================================
+// ZOOM
+// ============================================================
+let zoomLevel = 0; // 0 = fit, positive = zoomed in, negative = zoomed out
+const ZOOM_STEP = 0.15;
+const canvasWrapper = document.getElementById('canvasWrapper');
+const canvasArea = document.querySelector('.canvas-area');
+
+function applyZoom() {
+  if (zoomLevel === 0) {
+    // Fit mode: reset to CSS defaults
+    canvasWrapper.style.transform = '';
+    canvasWrapper.style.width = '';
+    canvasWrapper.style.height = '100%';
+    canvasWrapper.style.maxHeight = `calc(100vh - var(--header-h) - 48px)`;
+    canvasArea.style.overflow = 'hidden';
+    canvasArea.style.alignItems = 'center';
+  } else {
+    const scale = Math.pow(1 + ZOOM_STEP, zoomLevel);
+    // Calculate the fit size, then multiply by scale
+    const areaRect = canvasArea.getBoundingClientRect();
+    const availH = areaRect.height - 48;
+    const availW = areaRect.width - 48;
+    const aspect = state.canvasW / state.canvasH;
+    let fitH = availH;
+    let fitW = fitH * aspect;
+    if (fitW > availW) { fitW = availW; fitH = fitW / aspect; }
+    const newW = fitW * scale;
+    const newH = fitH * scale;
+    canvasWrapper.style.transform = '';
+    canvasWrapper.style.width = newW + 'px';
+    canvasWrapper.style.height = newH + 'px';
+    canvasWrapper.style.maxHeight = 'none';
+    canvasArea.style.overflow = 'auto';
+    canvasArea.style.alignItems = newH > areaRect.height ? 'flex-start' : 'center';
+  }
+}
+
+document.getElementById('zoomIn').addEventListener('click', () => {
+  zoomLevel = Math.min(zoomLevel + 1, 10);
+  applyZoom();
+});
+
+document.getElementById('zoomOut').addEventListener('click', () => {
+  zoomLevel = Math.max(zoomLevel - 1, -5);
+  applyZoom();
+});
+
+document.getElementById('zoomFit').addEventListener('click', () => {
+  zoomLevel = 0;
+  applyZoom();
+});
+
+// ============================================================
 // INIT
 // ============================================================
 function init() {
