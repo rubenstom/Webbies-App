@@ -79,7 +79,7 @@ body {
 
 /* ── Toolbar ── */
 .controls-panel {
-  width: 340px;
+  width: 380px;
   flex-shrink: 0;
   background: var(--surface);
   border-right: 1px solid var(--border);
@@ -112,7 +112,7 @@ body {
 }
 
 .control-group {
-  padding-bottom: 16px;
+  padding-bottom: 18px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -122,7 +122,7 @@ body {
 }
 
 .control-group + .control-group {
-  padding-top: 16px;
+  padding-top: 18px;
 }
 
 .control-group h3 {
@@ -136,24 +136,30 @@ body {
 
 .control-group label {
   display: grid;
-  grid-template-columns: 80px 1fr auto;
+  grid-template-columns: 100px 1fr auto;
   align-items: center;
   font-size: 13px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   gap: 6px;
   white-space: nowrap;
+  min-height: 30px;
+}
+
+.control-group label:last-child {
+  margin-bottom: 0;
 }
 
 .control-group select {
   font-size: 12px;
-  padding: 4px 8px;
+  padding: 6px 8px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
   color: var(--text);
   cursor: pointer;
+  width: 100%;
   min-width: 0;
-  max-width: 150px;
+  height: 30px;
 }
 
 input[type="range"] {
@@ -172,20 +178,16 @@ input[type="range"] {
   flex-shrink: 0;
 }
 
-/* Labels with only text + select (no slider) span 2 cols for select */
+/* Labels with only text + select or swatch (no slider) use 2 cols */
 .control-group label:has(select):not(:has(input[type="range"])) {
-  grid-template-columns: 80px 1fr;
+  grid-template-columns: 100px 1fr;
 }
 
 .control-group label:has(.color-swatch):not(:has(input[type="range"])) {
-  grid-template-columns: 80px 1fr;
+  grid-template-columns: 100px 1fr;
 }
 
 .control-group label:has(.color-swatch) .color-swatch {
-  justify-self: end;
-}
-
-.control-group label:has(select) select {
   justify-self: end;
 }
 
@@ -226,7 +228,7 @@ input[type="range"] {
 .bg-type-tabs {
   display: flex;
   gap: 3px;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   background: var(--bg);
   border-radius: 8px;
   padding: 3px;
@@ -254,7 +256,8 @@ input[type="range"] {
 .bg-options {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .sub-section {
@@ -411,15 +414,20 @@ input[type="range"] {
 
 .keyframe-editor label {
   display: grid;
-  grid-template-columns: 80px 1fr auto;
+  grid-template-columns: 100px 1fr auto;
   align-items: center;
   font-size: 13px;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
   gap: 6px;
+  min-height: 30px;
+}
+
+.keyframe-editor label:last-child {
+  margin-bottom: 0;
 }
 
 .keyframe-editor label:has(select):not(:has(input[type="range"])) {
-  grid-template-columns: 80px 1fr;
+  grid-template-columns: 100px 1fr;
 }
 
 .keyframe-editor label:has(select) select {
@@ -432,6 +440,12 @@ input[type="range"] {
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--bg);
+  width: 100%;
+  min-width: 0;
+}
+
+.keyframe-editor label:has(select):not(:has(input[type="range"])) {
+  grid-template-columns: 100px 1fr;
 }
 
 /* ── Canvas area: fills remaining space ── */
@@ -585,7 +599,7 @@ input[type="range"] {
 /* ── Color swatches ── */
 .color-swatch {
   width: 32px;
-  height: 28px;
+  height: 30px;
   border-radius: 6px;
   border: 1px solid var(--border);
   cursor: pointer;
