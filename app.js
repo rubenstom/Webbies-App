@@ -13,6 +13,7 @@ const state = {
   blurAmount: 40,
   bgImage: null,
   bgImageFit: 'cover',
+  bgImageBlur: 0,
   bgPattern: 'none',
   patternOpacity: 20,
   patternSize: 20,
@@ -57,7 +58,6 @@ const imageUpload = document.getElementById('imageUpload');
 const bgTabs = document.querySelectorAll('.bg-tab');
 const bgSolidOptions = document.getElementById('bgSolidOptions');
 const bgGradientOptions = document.getElementById('bgGradientOptions');
-const bgBlurOptions = document.getElementById('bgBlurOptions');
 const bgImageOptions = document.getElementById('bgImageOptions');
 const timelineTrack = document.getElementById('timelineTrack');
 const timelineProgress = document.getElementById('timelineProgress');
@@ -338,17 +338,13 @@ function drawBackground(c, w, h) {
     grad.addColorStop(1, state.gradColor2);
     c.fillStyle = grad;
     c.fillRect(0, 0, w, h);
-  } else if (state.bgType === 'blur' && state.image) {
-    if (!blurCanvas || blurCanvas._w !== w || blurCanvas._h !== h || blurCanvas._blur !== state.blurAmount) {
-      createBlurBackground(w, h);
-    }
-    c.drawImage(blurCanvas, 0, 0, w, h);
-    c.fillStyle = 'rgba(0,0,0,0.2)';
-    c.fillRect(0, 0, w, h);
   } else if (state.bgType === 'image' && state.bgImage) {
     drawBgImage(c, w, h);
+    if (state.bgImageBlur > 0) {
+      blurCanvasRegion(c, w, h, state.bgImageBlur);
+    }
   } else {
-    c.fillStyle = '#1a1a2e';
+    c.fillStyle = state.bgColor;
     c.fillRect(0, 0, w, h);
   }
   if (state.bgPattern !== 'none') drawPattern(c, w, h);
@@ -367,6 +363,84 @@ function drawBgImage(c, w, h) {
     c.fillStyle = '#000'; c.fillRect(0, 0, w, h);
   }
   c.drawImage(img, dx, dy, dw, dh);
+}
+
+function blurCanvasRegion(c, w, h, amount) {
+  // Work on a smaller canvas for performance
+  const maxDim = 400;
+  const scale = Math.min(1, maxDim / Math.max(w, h));
+  const sw = Math.round(w * scale), sh = Math.round(h * scale);
+  const radius = Math.max(1, Math.round(amount * scale));
+
+  const off = document.createElement('canvas');
+  off.width = sw; off.height = sh;
+  const octx = off.getContext('2d');
+
+  // Box blur on ImageData (3 passes ≈ Gaussian) — works in all browsers
+  octx.drawImage(c.canvas, 0, 0, sw, sh);
+  const imageData = octx.getImageData(0, 0, sw, sh);
+  boxBlur(imageData.data, sw, sh, radius, 3);
+  octx.putImageData(imageData, 0, 0);
+
+  c.save();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.imageSmoothingEnabled = true;
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(off, 0, 0, c.canvas.width, c.canvas.height);
+  c.restore();
+}
+
+function boxBlur(data, w, h, radius, passes) {
+  const len = data.length;
+  const tmp = new Uint8ClampedArray(len);
+  for (let p = 0; p < passes; p++) {
+    // Horizontal pass
+    for (let y = 0; y < h; y++) {
+      let ri = 0, gi = 0, bi = 0, ai = 0;
+      const size = radius * 2 + 1;
+      // Init window
+      for (let x = -radius; x <= radius; x++) {
+        const ix = Math.min(w - 1, Math.max(0, x));
+        const off = (y * w + ix) * 4;
+        ri += data[off]; gi += data[off + 1]; bi += data[off + 2]; ai += data[off + 3];
+      }
+      for (let x = 0; x < w; x++) {
+        const off = (y * w + x) * 4;
+        tmp[off] = ri / size; tmp[off + 1] = gi / size; tmp[off + 2] = bi / size; tmp[off + 3] = ai / size;
+        // Slide window
+        const addX = Math.min(w - 1, x + radius + 1);
+        const remX = Math.max(0, x - radius);
+        const addOff = (y * w + addX) * 4;
+        const remOff = (y * w + remX) * 4;
+        ri += data[addOff] - data[remOff];
+        gi += data[addOff + 1] - data[remOff + 1];
+        bi += data[addOff + 2] - data[remOff + 2];
+        ai += data[addOff + 3] - data[remOff + 3];
+      }
+    }
+    // Vertical pass
+    for (let x = 0; x < w; x++) {
+      let ri = 0, gi = 0, bi = 0, ai = 0;
+      const size = radius * 2 + 1;
+      for (let y = -radius; y <= radius; y++) {
+        const iy = Math.min(h - 1, Math.max(0, y));
+        const off = (iy * w + x) * 4;
+        ri += tmp[off]; gi += tmp[off + 1]; bi += tmp[off + 2]; ai += tmp[off + 3];
+      }
+      for (let y = 0; y < h; y++) {
+        const off = (y * w + x) * 4;
+        data[off] = ri / size; data[off + 1] = gi / size; data[off + 2] = bi / size; data[off + 3] = ai / size;
+        const addY = Math.min(h - 1, y + radius + 1);
+        const remY = Math.max(0, y - radius);
+        const addOff = (addY * w + x) * 4;
+        const remOff = (remY * w + x) * 4;
+        ri += tmp[addOff] - tmp[remOff];
+        gi += tmp[addOff + 1] - tmp[remOff + 1];
+        bi += tmp[addOff + 2] - tmp[remOff + 2];
+        ai += tmp[addOff + 3] - tmp[remOff + 3];
+      }
+    }
+  }
 }
 
 function drawPattern(c, w, h) {
@@ -411,7 +485,8 @@ function createNoiseCanvas(w, h) {
   nc.drawImage(small, 0, 0, w, h);
 }
 
-// FIX #3: Cross-browser blur using iterative downscaling
+
+
 function createBlurBackground(w, h) {
   if (!state.image) return;
 
@@ -802,23 +877,42 @@ function bindControls() {
     state.bgType = tab.dataset.bg;
     bgSolidOptions.classList.toggle('hidden', state.bgType !== 'solid');
     bgGradientOptions.classList.toggle('hidden', state.bgType !== 'gradient');
-    bgBlurOptions.classList.toggle('hidden', state.bgType !== 'blur');
     bgImageOptions.classList.toggle('hidden', state.bgType !== 'image');
     blurCanvas = null;
     render();
   }));
 
   bindRange('gradAngle', 'gradAngleVal', v => `${v}\u00B0`, v => { state.gradAngle = +v; render(); });
-  bindRange('blurAmount', 'blurAmountVal', v => `${v}px`, v => { state.blurAmount = +v; blurCanvas = null; render(); });
-
   document.getElementById('bgImageUpload').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => { const img = new Image(); img.onload = () => { state.bgImage = img; render(); }; img.src = ev.target.result; };
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => { state.bgImage = img; render(); };
+      img.src = ev.target.result;
+    };
     reader.readAsDataURL(file);
+    // Clear active preset swatch
+    document.querySelectorAll('.bg-preset-swatch').forEach(s => s.classList.remove('active'));
   });
+
+  // Preset background image swatches
+  document.querySelectorAll('.bg-preset-swatch').forEach(swatch => {
+    swatch.addEventListener('click', () => {
+      const img = new Image();
+      img.onload = () => {
+        state.bgImage = img;
+        document.querySelectorAll('.bg-preset-swatch').forEach(s => s.classList.remove('active'));
+        swatch.classList.add('active');
+        render();
+      };
+      img.src = swatch.dataset.img;
+    });
+  });
+
   document.getElementById('bgImageFit').addEventListener('change', (e) => { state.bgImageFit = e.target.value; render(); });
+  bindRange('bgImageBlur', 'bgImageBlurVal', v => `${v}px`, v => { state.bgImageBlur = +v; render(); });
 
   document.getElementById('bgPattern').addEventListener('change', (e) => {
     state.bgPattern = e.target.value;

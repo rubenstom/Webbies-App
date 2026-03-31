@@ -260,6 +260,33 @@ input[type="range"] {
   margin-bottom: 10px;
 }
 
+.bg-presets {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.bg-preset-swatch {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+  border: none;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  transition: outline-color 0.15s, transform 0.15s;
+  overflow: hidden;
+}
+
+.bg-preset-swatch:hover {
+  transform: scale(1.08);
+}
+
+.bg-preset-swatch.active {
+  outline-color: var(--ui-btn);
+}
+
 .sub-section {
   margin-top: 10px;
   padding-top: 10px;

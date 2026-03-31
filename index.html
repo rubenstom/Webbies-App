@@ -37,7 +37,6 @@
         <div class="bg-type-tabs">
           <button class="bg-tab active" data-bg="solid">Solid</button>
           <button class="bg-tab" data-bg="gradient">Gradient</button>
-          <button class="bg-tab" data-bg="blur">Blur</button>
           <button class="bg-tab" data-bg="image">Image</button>
         </div>
         <div class="bg-options" id="bgSolidOptions">
@@ -57,23 +56,37 @@
             <span class="range-val" id="gradAngleVal">135°</span>
           </label>
         </div>
-        <div class="bg-options hidden" id="bgBlurOptions">
-          <label>Blur
-            <input type="range" id="blurAmount" min="10" max="80" value="40">
-            <span class="range-val" id="blurAmountVal">40px</span>
-          </label>
-        </div>
         <div class="bg-options hidden" id="bgImageOptions">
           <label class="upload-btn upload-btn-sm">
             <input type="file" id="bgImageUpload" accept="image/*" hidden>
             <span>Choose Image</span>
           </label>
+          <div class="bg-presets" id="bgPresets">
+            <div class="bg-preset-swatch" data-img="img/01.jpg" style="background-image:url(img/01.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/02.jpg" style="background-image:url(img/02.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/03.jpg" style="background-image:url(img/03.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/04.jpg" style="background-image:url(img/04.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/05.jpg" style="background-image:url(img/05.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/06.jpg" style="background-image:url(img/06.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/07.jpg" style="background-image:url(img/07.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/08.jpg" style="background-image:url(img/08.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/09.jpg" style="background-image:url(img/09.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/10.jpg" style="background-image:url(img/10.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/11.jpg" style="background-image:url(img/11.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/12.jpg" style="background-image:url(img/12.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/13.jpg" style="background-image:url(img/13.jpg)"></div>
+            <div class="bg-preset-swatch" data-img="img/14.jpg" style="background-image:url(img/14.jpg)"></div>
+          </div>
           <label>Fit
             <select id="bgImageFit">
               <option value="cover">Cover</option>
               <option value="fill">Stretch</option>
               <option value="contain">Contain</option>
             </select>
+          </label>
+          <label>Blur
+            <input type="range" id="bgImageBlur" min="0" max="80" value="0">
+            <span class="range-val" id="bgImageBlurVal">0px</span>
           </label>
         </div>
         <label>Pattern
