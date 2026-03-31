@@ -42,7 +42,7 @@
         </div>
         <div class="bg-options" id="bgSolidOptions">
           <label>Color
-            <span class="color-swatch" data-target="bgColor" data-value="#1a1a2e"></span>
+            <span class="color-swatch" data-target="bgColor" data-value="#e0e0e0"></span>
           </label>
         </div>
         <div class="bg-options hidden" id="bgGradientOptions">
@@ -99,17 +99,40 @@
         </div>
         <label>Output Size
             <select id="canvasPreset">
-              <option value="720x1280">720x1280 (9:16)</option>
-              <option value="1080x1920">1080x1920 (9:16)</option>
-              <option value="1080x1350">1080x1350 (4:5)</option>
-              <option value="1080x1080">1080x1080 (1:1)</option>
-              <option value="1200x1200">1200x1200 (1:1)</option>
-              <option value="1200x628">1200x628 (OG)</option>
-              <option value="1280x720">1280x720 (16:9)</option>
-              <option value="1920x1080">1920x1080 (FHD)</option>
-              <option value="2560x1440">2560x1440 (QHD)</option>
-              <option value="3840x2160">3840x2160 (4K)</option>
-              <option value="2160x3840">2160x3840 (4K V)</option>
+              <optgroup label="Square">
+                <option value="1080x1080">1080x1080 (1:1)</option>
+                <option value="1200x1200">1200x1200 (1:1)</option>
+                <option value="2000x2000">2000x2000 (1:1)</option>
+              </optgroup>
+              <optgroup label="Landscape">
+                <option value="1200x628">1200x628 (OG Image)</option>
+                <option value="1200x675">1200x675 (X / Twitter)</option>
+                <option value="1280x720">1280x720 (HD)</option>
+                <option value="1584x396">1584x396 (LinkedIn Banner)</option>
+                <option value="1640x856">1640x856 (Dribbble)</option>
+                <option value="1920x1005">1920x1005 (X Header)</option>
+                <option value="1920x1080">1920x1080 (FHD)</option>
+                <option value="2000x1000">2000x1000 (2:1)</option>
+                <option value="2560x1440">2560x1440 (QHD)</option>
+                <option value="3000x2000">3000x2000 (3:2)</option>
+                <option value="3840x2160" selected>3840x2160 (4K)</option>
+              </optgroup>
+              <optgroup label="Portrait">
+                <option value="720x1280">720x1280 (9:16)</option>
+                <option value="1080x1350">1080x1350 (IG Portrait)</option>
+                <option value="1080x1920">1080x1920 (Story / Reel)</option>
+                <option value="1000x1500">1000x1500 (Pinterest)</option>
+                <option value="2000x3000">2000x3000 (2:3)</option>
+                <option value="2160x3840">2160x3840 (4K Vertical)</option>
+              </optgroup>
+              <optgroup label="Social Media">
+                <option value="820x312">820x312 (FB Cover)</option>
+                <option value="1200x630">1200x630 (FB Post)</option>
+                <option value="1080x566">1080x566 (IG Landscape)</option>
+                <option value="1128x191">1128x191 (LinkedIn BG)</option>
+                <option value="1600x900">1600x900 (YouTube Thumb)</option>
+                <option value="2560x1440">2560x1440 (YT Banner)</option>
+              </optgroup>
             </select>
           </label>
       </section>
@@ -129,7 +152,7 @@
             <option value="1">1:1 (Square)</option>
             <option value="1.25">5:4</option>
             <option value="1.3333">4:3</option>
-            <option value="1.5">3:2</option>
+            <option value="1.5" selected>3:2</option>
             <option value="1.6">16:10 (MacBook)</option>
             <option value="1.7778">16:9 (Widescreen)</option>
             <option value="2.3333">21:9 (Ultrawide)</option>
@@ -167,16 +190,16 @@
           <span class="range-val" id="shadowStrengthVal">50%</span>
         </label>
         <label>Blur
-          <input type="range" id="shadowBlur" min="0" max="100" value="40">
-          <span class="range-val" id="shadowBlurVal">40px</span>
+          <input type="range" id="shadowBlur" min="0" max="100" value="16">
+          <span class="range-val" id="shadowBlurVal">16px</span>
         </label>
         <label>Offset Y
           <input type="range" id="shadowOffsetY" min="-50" max="50" value="8">
           <span class="range-val" id="shadowOffsetYVal">8px</span>
         </label>
         <label>Offset X
-          <input type="range" id="shadowOffsetX" min="-50" max="50" value="0">
-          <span class="range-val" id="shadowOffsetXVal">0px</span>
+          <input type="range" id="shadowOffsetX" min="-50" max="50" value="-8">
+          <span class="range-val" id="shadowOffsetXVal">-8px</span>
         </label>
         <label>Color
           <span class="color-swatch" data-target="shadowColor" data-value="#000000"></span>
@@ -351,7 +374,6 @@
       <div class="canvas-wrapper" id="canvasWrapper">
         <canvas id="previewCanvas"></canvas>
         <div class="empty-state" id="emptyState">
-          <div class="empty-icon">&#x1F5BC;</div>
           <p>Drop a screenshot here<br>or use the upload button</p>
         </div>
       </div>
@@ -359,6 +381,21 @@
         <button class="zoom-btn" id="zoomOut" title="Zoom out">−</button>
         <button class="zoom-btn zoom-fit" id="zoomFit" title="Fit to view">Fit</button>
         <button class="zoom-btn" id="zoomIn" title="Zoom in">+</button>
+      </div>
+      <div class="bottom-playbar">
+        <button id="playBtn2" class="play-btn" title="Play/Pause">
+          <svg class="play-icon2" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+          <svg class="pause-icon2 hidden" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="4" width="4" height="16"/>
+            <rect x="14" y="4" width="4" height="16"/>
+          </svg>
+        </button>
+        <div class="playbar-track" id="playbarTrack">
+          <div class="playbar-progress" id="playbarProgress"></div>
+        </div>
+        <span class="playbar-time" id="playbarTime">0:00 / 0:08</span>
       </div>
     </div>
   </div>

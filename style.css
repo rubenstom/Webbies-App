@@ -467,9 +467,7 @@ input[type="range"] {
   border: 1px solid var(--border);
   overflow: hidden;
   box-shadow: var(--shadow-md);
-  aspect-ratio: 9/16;
-  height: 100%;
-  max-height: calc(100vh - var(--header-h) - 48px);
+  flex-shrink: 0;
 }
 
 .canvas-wrapper canvas {
@@ -510,21 +508,21 @@ input[type="range"] {
   gap: 2px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 3px;
+  border-radius: 100px;
+  padding: 4px;
   box-shadow: var(--shadow-sm);
 }
 
 .zoom-btn {
-  width: 32px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border: none;
   background: transparent;
   color: var(--text-secondary);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -541,6 +539,53 @@ input[type="range"] {
   font-weight: 600;
   width: auto;
   padding: 0 10px;
+  border-radius: 100px;
+}
+
+/* ── Bottom playbar ── */
+.bottom-playbar {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 140px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  padding: 4px 14px 4px 4px;
+  box-shadow: var(--shadow-sm);
+}
+
+.bottom-playbar .play-btn {
+  width: 30px;
+  height: 30px;
+}
+
+.playbar-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+}
+
+.playbar-progress {
+  height: 100%;
+  background: var(--ui-btn);
+  border-radius: 3px;
+  width: 0%;
+  pointer-events: none;
+}
+
+.playbar-time {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ── Export ── */

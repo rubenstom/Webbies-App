@@ -6,7 +6,7 @@
 const state = {
   image: null,
   bgType: 'solid',
-  bgColor: '#1a1a2e',
+  bgColor: '#e0e0e0',
   gradColor1: '#667eea',
   gradColor2: '#764ba2',
   gradAngle: 135,
@@ -17,19 +17,19 @@ const state = {
   patternOpacity: 20,
   patternSize: 20,
   patternColor: '#ffffff',
-  aspectRatio: 2 / 3,
+  aspectRatio: 3 / 2,
   placeholderSize: 70,
   cornerRadius: 12,
   borderWidth: 0,
   borderColor: '#ffffff',
   borderOpacity: 100,
   shadowStrength: 50,
-  shadowBlur: 40,
-  shadowOffsetX: 0,
+  shadowBlur: 16,
+  shadowOffsetX: -8,
   shadowOffsetY: 8,
   shadowColor: '#000000',
-  canvasW: 1080,
-  canvasH: 1920,
+  canvasW: 3840,
+  canvasH: 2160,
   duration: 8,
   defaultEasing: 'easeInOut',
   loopMode: 'none',
@@ -106,7 +106,13 @@ const easings = {
 };
 
 // --- Helpers ---
-function resizeCanvas() { canvas.width = state.canvasW; canvas.height = state.canvasH; }
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = state.canvasW * dpr;
+  canvas.height = state.canvasH * dpr;
+  canvas.style.width = '100%';
+  canvas.style.height = '100%';
+}
 function parseCanvasPreset(v) { const [w, h] = v.split('x').map(Number); return { w, h }; }
 function hexToRgb(hex) {
   return { r: parseInt(hex.slice(1, 3), 16), g: parseInt(hex.slice(3, 5), 16), b: parseInt(hex.slice(5, 7), 16) };
@@ -504,7 +510,36 @@ function getEntryExitModifiers(t) {
 // ============================================================
 function renderToContext(c, w, h) {
   drawBackground(c, w, h);
-  if (!state.image) return;
+
+  // Draw empty placeholder when no image is loaded
+  if (!state.image) {
+    const padding = (100 - state.placeholderSize) / 100;
+    const maxW = w * (1 - padding), maxH = h * (1 - padding);
+    let phW, phH;
+    if (maxW / maxH > state.aspectRatio) { phH = maxH; phW = phH * state.aspectRatio; }
+    else { phW = maxW; phH = phW / state.aspectRatio; }
+    const phX = (w - phW) / 2;
+    const phY = (h - phH) / 2;
+    const sc = w / 1080;
+    const cr = state.cornerRadius * sc;
+
+    // Shadow + fill for empty placeholder (draw together so shadow comes from the white rect)
+    c.save();
+    if (state.shadowStrength > 0) {
+      const { r, g, b } = hexToRgb(state.shadowColor);
+      const shadowAlpha = state.shadowStrength / 100 * 0.8;
+      c.shadowColor = `rgba(${r},${g},${b},${shadowAlpha})`;
+      c.shadowBlur = state.shadowBlur * sc;
+      c.shadowOffsetX = state.shadowOffsetX * sc;
+      c.shadowOffsetY = state.shadowOffsetY * sc;
+    }
+    c.beginPath();
+    roundRect(c, phX, phY, phW, phH, cr);
+    c.fillStyle = '#ffffff';
+    c.fill();
+    c.restore();
+    return;
+  }
 
   const effectiveT = getEffectiveTime();
   const scrollPct = lerpProp('scroll', effectiveT) / 100;
@@ -538,39 +573,6 @@ function renderToContext(c, w, h) {
   const totalOffsetX = kfOffsetX;
   const totalOffsetY = kfOffsetY + slideOffsetY;
 
-  // Shadow: drawn with same transforms as content so it adapts to tilt/rotation/scale
-  if (state.shadowStrength > 0 && opacity > 0) {
-    const { r, g, b } = hexToRgb(state.shadowColor);
-    const shadowAlpha = state.shadowStrength / 100 * 0.8 * opacity;
-    const offScreen = w * 3;
-
-    c.save();
-    // Apply same transforms as the main content
-    const cx = w / 2 + totalOffsetX;
-    const cy = h / 2 + totalOffsetY;
-    c.translate(cx, cy);
-    c.rotate(rotation * Math.PI / 180);
-    c.scale(finalScale, finalScale);
-    if (tiltX !== 0 || tiltY !== 0) {
-      const skewX = tiltY * Math.PI / 180 * 0.3;
-      const skewY = tiltX * Math.PI / 180 * 0.3;
-      c.transform(1 - Math.abs(tiltY) * 0.005, skewY, skewX, 1 - Math.abs(tiltX) * 0.005, 0, 0);
-    }
-    c.translate(-cx, -cy);
-
-    c.shadowColor = `rgba(${r},${g},${b},${shadowAlpha})`;
-    c.shadowBlur = state.shadowBlur * sc;
-    c.shadowOffsetX = offScreen + state.shadowOffsetX * sc;
-    c.shadowOffsetY = state.shadowOffsetY * sc;
-    c.beginPath();
-    const drawX = phX + totalOffsetX;
-    const drawY = phY + totalOffsetY;
-    roundRect(c, drawX - offScreen, drawY, phW, phH, cr);
-    c.fillStyle = 'rgba(0,0,0,1)';
-    c.fill();
-    c.restore();
-  }
-
   // Main content with full transforms
   c.save();
   c.globalAlpha = opacity;
@@ -588,6 +590,22 @@ function renderToContext(c, w, h) {
     c.transform(1 - Math.abs(tiltY) * 0.005, skewY, skewX, 1 - Math.abs(tiltX) * 0.005, 0, 0);
   }
   c.translate(-cx, -cy);
+
+  // Shadow: draw directly using canvas shadow properties on the placeholder shape
+  if (state.shadowStrength > 0 && opacity > 0) {
+    const { r, g, b } = hexToRgb(state.shadowColor);
+    const shadowAlpha = state.shadowStrength / 100 * 0.8 * opacity;
+    c.save();
+    c.shadowColor = `rgba(${r},${g},${b},${shadowAlpha})`;
+    c.shadowBlur = state.shadowBlur * sc;
+    c.shadowOffsetX = state.shadowOffsetX * sc;
+    c.shadowOffsetY = state.shadowOffsetY * sc;
+    c.beginPath();
+    roundRect(c, phX + totalOffsetX, phY + totalOffsetY, phW, phH, cr);
+    c.fillStyle = '#ffffff';
+    c.fill();
+    c.restore();
+  }
 
   // Offset drawing to account for position
   const drawX = phX + totalOffsetX;
@@ -620,7 +638,13 @@ function renderToContext(c, w, h) {
   c.restore(); // globalAlpha
 }
 
-function render() { renderToContext(ctx, state.canvasW, state.canvasH); }
+function render() {
+  const dpr = window.devicePixelRatio || 1;
+  ctx.save();
+  ctx.scale(dpr, dpr);
+  renderToContext(ctx, state.canvasW, state.canvasH);
+  ctx.restore();
+}
 
 function roundRect(c, x, y, w, h, r) {
   r = Math.min(r, w / 2, h / 2);
@@ -637,16 +661,25 @@ function roundRect(c, x, y, w, h, r) {
 // ============================================================
 let animStart = null, animFrame = null;
 
+function syncPlayIcons() {
+  // Sync both play buttons (toolbar + bottom bar)
+  const playing = state.playing;
+  playIcon.classList.toggle('hidden', playing);
+  pauseIcon.classList.toggle('hidden', !playing);
+  document.querySelectorAll('.play-icon2').forEach(el => el.classList.toggle('hidden', playing));
+  document.querySelectorAll('.pause-icon2').forEach(el => el.classList.toggle('hidden', !playing));
+}
+
 function startPlayback() {
   state.playing = true;
-  playIcon.classList.add('hidden'); pauseIcon.classList.remove('hidden');
+  syncPlayIcons();
   animStart = performance.now() - state.currentTime * state.duration * 1000;
   tick();
 }
 
 function stopPlayback() {
   state.playing = false;
-  playIcon.classList.remove('hidden'); pauseIcon.classList.add('hidden');
+  syncPlayIcons();
   if (animFrame) cancelAnimationFrame(animFrame);
 }
 
@@ -664,10 +697,17 @@ function tick() {
 // TIMELINE
 // ============================================================
 function updateTimeline() {
-  timelineProgress.style.width = (state.currentTime * 100) + '%';
-  scrubber.style.left = (state.currentTime * 100) + '%';
+  const pct = (state.currentTime * 100) + '%';
+  timelineProgress.style.width = pct;
+  scrubber.style.left = pct;
   const sec = state.currentTime * state.duration;
-  timeDisplay.textContent = `${formatTime(sec)} / ${formatTime(state.duration)}`;
+  const timeStr = `${formatTime(sec)} / ${formatTime(state.duration)}`;
+  timeDisplay.textContent = timeStr;
+  // Sync bottom playbar
+  const playbarProgress = document.getElementById('playbarProgress');
+  const playbarTime = document.getElementById('playbarTime');
+  if (playbarProgress) playbarProgress.style.width = pct;
+  if (playbarTime) playbarTime.textContent = timeStr;
 }
 
 function formatTime(s) {
@@ -804,7 +844,7 @@ function bindControls() {
     const { w, h } = parseCanvasPreset(e.target.value);
     state.canvasW = w; state.canvasH = h;
     resizeCanvas(); blurCanvas = null; noiseCanvas = null;
-    canvas.parentElement.style.aspectRatio = `${w}/${h}`;
+    zoomLevel = FIT_LEVEL; applyZoom();
     render();
   });
 
@@ -1076,38 +1116,38 @@ function lzwEncode(pixels, minCodeSize) {
 // ============================================================
 // ZOOM
 // ============================================================
-let zoomLevel = 0; // 0 = fit, positive = zoomed in, negative = zoomed out
 const ZOOM_STEP = 0.15;
+const FIT_LEVEL = -2; // default "fit" is 2 steps zoomed out from full fit
+let zoomLevel = FIT_LEVEL;
 const canvasWrapper = document.getElementById('canvasWrapper');
 const canvasArea = document.querySelector('.canvas-area');
 
+function getCanvasFitSize() {
+  const areaRect = canvasArea.getBoundingClientRect();
+  const availH = areaRect.height - 48;
+  const availW = areaRect.width - 48;
+  const aspect = state.canvasW / state.canvasH;
+  let fitH = availH;
+  let fitW = fitH * aspect;
+  if (fitW > availW) { fitW = availW; fitH = fitW / aspect; }
+  return { fitW, fitH };
+}
+
 function applyZoom() {
-  if (zoomLevel === 0) {
-    // Fit mode: reset to CSS defaults
-    canvasWrapper.style.transform = '';
-    canvasWrapper.style.width = '';
-    canvasWrapper.style.height = '100%';
-    canvasWrapper.style.maxHeight = `calc(100vh - var(--header-h) - 48px)`;
-    canvasArea.style.overflow = 'hidden';
-    canvasArea.style.alignItems = 'center';
-  } else {
-    const scale = Math.pow(1 + ZOOM_STEP, zoomLevel);
-    // Calculate the fit size, then multiply by scale
-    const areaRect = canvasArea.getBoundingClientRect();
-    const availH = areaRect.height - 48;
-    const availW = areaRect.width - 48;
-    const aspect = state.canvasW / state.canvasH;
-    let fitH = availH;
-    let fitW = fitH * aspect;
-    if (fitW > availW) { fitW = availW; fitH = fitW / aspect; }
-    const newW = fitW * scale;
-    const newH = fitH * scale;
-    canvasWrapper.style.transform = '';
-    canvasWrapper.style.width = newW + 'px';
-    canvasWrapper.style.height = newH + 'px';
-    canvasWrapper.style.maxHeight = 'none';
+  const areaRect = canvasArea.getBoundingClientRect();
+  const { fitW, fitH } = getCanvasFitSize();
+  const scale = Math.pow(1 + ZOOM_STEP, zoomLevel);
+  const newW = fitW * scale;
+  const newH = fitH * scale;
+  canvasWrapper.style.width = newW + 'px';
+  canvasWrapper.style.height = newH + 'px';
+  canvasWrapper.style.maxHeight = 'none';
+  if (newW > areaRect.width - 16 || newH > areaRect.height - 16) {
     canvasArea.style.overflow = 'auto';
     canvasArea.style.alignItems = newH > areaRect.height ? 'flex-start' : 'center';
+  } else {
+    canvasArea.style.overflow = 'hidden';
+    canvasArea.style.alignItems = 'center';
   }
 }
 
@@ -1117,13 +1157,28 @@ document.getElementById('zoomIn').addEventListener('click', () => {
 });
 
 document.getElementById('zoomOut').addEventListener('click', () => {
-  zoomLevel = Math.max(zoomLevel - 1, -5);
+  zoomLevel = Math.max(zoomLevel - 1, -8);
   applyZoom();
 });
 
 document.getElementById('zoomFit').addEventListener('click', () => {
-  zoomLevel = 0;
+  zoomLevel = FIT_LEVEL;
   applyZoom();
+});
+
+// ============================================================
+// BOTTOM PLAYBAR
+// ============================================================
+document.getElementById('playBtn2').addEventListener('click', () => {
+  if (state.playing) stopPlayback(); else startPlayback();
+});
+
+document.getElementById('playbarTrack').addEventListener('click', (e) => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  state.currentTime = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  if (state.playing) animStart = performance.now() - state.currentTime * state.duration * 1000;
+  updateTimeline();
+  render();
 });
 
 // ============================================================
@@ -1136,6 +1191,7 @@ function init() {
   initScrubber();
   renderKeyframes();
   updateTimeline();
+  applyZoom();
   render();
 }
 
