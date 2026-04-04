@@ -48,6 +48,9 @@ const state = {
   exportScale: 1,
   exportFps: 30,
   exportFormat: 'mp4',
+  borderEnabled: false,
+  shadowEnabled: false,
+  entryExitEnabled: false,
 };
 
 // --- DOM refs ---
@@ -563,6 +566,7 @@ function getEffectiveTime() {
 
 function getEntryExitModifiers(t) {
   let opacity = 1, offsetYFrac = 0, scaleMod = 1;
+  if (!state.entryExitEnabled) return { opacity, offsetYFrac, scaleMod };
   const entryFrac = state.entryDuration / 100;
   const exitFrac = state.exitDuration / 100;
   if (state.entryAnim !== 'none' && t < entryFrac && entryFrac > 0) {
@@ -600,7 +604,7 @@ function renderToContext(c, w, h) {
 
     // Shadow + fill for empty placeholder (draw together so shadow comes from the white rect)
     c.save();
-    if (state.shadowStrength > 0) {
+    if (state.shadowEnabled && state.shadowStrength > 0) {
       const { r, g, b } = hexToRgb(state.shadowColor);
       const shadowAlpha = state.shadowStrength / 100 * 0.8;
       c.shadowColor = `rgba(${r},${g},${b},${shadowAlpha})`;
@@ -667,7 +671,7 @@ function renderToContext(c, w, h) {
   c.translate(-cx, -cy);
 
   // Shadow: draw directly using canvas shadow properties on the placeholder shape
-  if (state.shadowStrength > 0 && opacity > 0) {
+  if (state.shadowEnabled && state.shadowStrength > 0 && opacity > 0) {
     const { r, g, b } = hexToRgb(state.shadowColor);
     const shadowAlpha = state.shadowStrength / 100 * 0.8 * opacity;
     c.save();
@@ -701,7 +705,7 @@ function renderToContext(c, w, h) {
   c.restore();
 
   // Border
-  if (bw > 0) {
+  if (state.borderEnabled && bw > 0) {
     const { r, g, b } = hexToRgb(state.borderColor);
     c.strokeStyle = `rgba(${r},${g},${b},${state.borderOpacity / 100})`;
     c.lineWidth = bw;
@@ -837,7 +841,9 @@ function selectKeyframe(i) {
 }
 
 function setKfControl(inputId, valId, value, suffix) {
-  document.getElementById(inputId).value = value;
+  const el = document.getElementById(inputId);
+  el.value = value;
+  updateRangeTrack(el);
   document.getElementById(valId).textContent = Math.round(value) + suffix;
 }
 
@@ -1003,11 +1009,28 @@ function bindControls() {
       if (state.selectedKf === null) return;
       state.keyframes[state.selectedKf][prop] = +e.target.value;
       document.getElementById(valId).textContent = e.target.value + suffix;
+      updateRangeTrack(e.target);
       render();
     });
   });
   document.getElementById('kfEasing').addEventListener('change', (e) => {
     if (state.selectedKf !== null) state.keyframes[state.selectedKf].easing = e.target.value;
+  });
+
+  document.getElementById('borderToggle').addEventListener('change', (e) => {
+    state.borderEnabled = e.target.checked;
+    document.getElementById('borderOptions').classList.toggle('hidden', !e.target.checked);
+    render();
+  });
+  document.getElementById('shadowToggle').addEventListener('change', (e) => {
+    state.shadowEnabled = e.target.checked;
+    document.getElementById('shadowOptions').classList.toggle('hidden', !e.target.checked);
+    render();
+  });
+  document.getElementById('entryExitToggle').addEventListener('change', (e) => {
+    state.entryExitEnabled = e.target.checked;
+    document.getElementById('entryExitOptions').classList.toggle('hidden', !e.target.checked);
+    render();
   });
 
   document.getElementById('exportFormat').addEventListener('change', (e) => { state.exportFormat = e.target.value; });
@@ -1021,9 +1044,15 @@ function bindControls() {
   });
 }
 
+function updateRangeTrack(el) {
+  const pct = (el.value - el.min) / (el.max - el.min) * 100;
+  el.style.background = `linear-gradient(to right, #999 0%, #999 ${pct}%, #e6e6e6 ${pct}%, #e6e6e6 100%)`;
+}
+
 function bindRange(id, valId, fmt, cb) {
   const el = document.getElementById(id), val = document.getElementById(valId);
-  el.addEventListener('input', (e) => { val.textContent = fmt(e.target.value); cb(e.target.value); });
+  updateRangeTrack(el);
+  el.addEventListener('input', (e) => { val.textContent = fmt(e.target.value); updateRangeTrack(el); cb(e.target.value); });
 }
 
 // ============================================================
@@ -1465,15 +1494,18 @@ function applyTemplate(id) {
   state.selectedKf = null;
   state.currentTime = 0;
   // Sync UI controls
-  document.getElementById('duration').value = state.duration;
+  const durEl = document.getElementById('duration');
+  durEl.value = state.duration; updateRangeTrack(durEl);
   document.getElementById('durationVal').textContent = state.duration + 's';
   document.getElementById('defaultEasing').value = state.defaultEasing;
   document.getElementById('loopMode').value = state.loopMode;
   document.getElementById('entryAnim').value = state.entryAnim;
   document.getElementById('exitAnim').value = state.exitAnim;
-  document.getElementById('entryDuration').value = state.entryDuration;
+  const entryEl = document.getElementById('entryDuration');
+  entryEl.value = state.entryDuration; updateRangeTrack(entryEl);
   document.getElementById('entryDurationVal').textContent = state.entryDuration + '%';
-  document.getElementById('exitDuration').value = state.exitDuration;
+  const exitEl = document.getElementById('exitDuration');
+  exitEl.value = state.exitDuration; updateRangeTrack(exitEl);
   document.getElementById('exitDurationVal').textContent = state.exitDuration + '%';
   renderKeyframes();
   updateTimeline();
@@ -1488,7 +1520,7 @@ function applyPreset(id) {
   const syncRange = (id, val, fmt) => {
     const el = document.getElementById(id);
     const valEl = document.getElementById(id + 'Val');
-    if (el) el.value = val;
+    if (el) { el.value = val; updateRangeTrack(el); }
     if (valEl) valEl.textContent = fmt(val);
   };
 
@@ -1521,6 +1553,14 @@ function applyPreset(id) {
   if (state.bgType === 'gradient') {
     syncRange('gradAngle', state.gradAngle, v => v + '°');
   }
+
+  // Sync toggles based on preset values
+  state.borderEnabled = (state.borderWidth > 0);
+  document.getElementById('borderToggle').checked = state.borderEnabled;
+  document.getElementById('borderOptions').classList.toggle('hidden', !state.borderEnabled);
+  state.shadowEnabled = (state.shadowStrength > 0);
+  document.getElementById('shadowToggle').checked = state.shadowEnabled;
+  document.getElementById('shadowOptions').classList.toggle('hidden', !state.shadowEnabled);
 
   // Sync pattern controls
   document.getElementById('bgPattern').value = state.bgPattern;
@@ -1613,6 +1653,7 @@ function init() {
   renderKeyframes();
   updateTimeline();
   applyZoom();
+  document.querySelectorAll('input[type="range"]').forEach(updateRangeTrack);
   render();
 }
 

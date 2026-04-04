@@ -112,17 +112,18 @@ body {
 }
 
 .control-group {
-  padding-bottom: 18px;
+  padding-top: 22px;
+  padding-bottom: 22px;
   border-bottom: 1px solid var(--border);
+}
+
+.control-group:first-child {
+  padding-top: 0;
 }
 
 .control-group:last-child {
   border-bottom: none;
   padding-bottom: 0;
-}
-
-.control-group + .control-group {
-  padding-top: 18px;
 }
 
 .control-group h3 {
@@ -132,6 +133,66 @@ body {
   color: var(--text-secondary);
   margin-bottom: 10px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  line-height: 20px;
+}
+
+.control-group h3:has(+ .hidden),
+.control-group h3:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Toggle Switch ── */
+.toggle-switch {
+  position: relative;
+  display: inline-block !important;
+  width: 36px;
+  height: 20px;
+  min-height: 20px !important;
+  flex-shrink: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 20px;
+  background: var(--border);
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: #999;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(16px);
 }
 
 .control-group label {
@@ -163,10 +224,48 @@ body {
 }
 
 input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   min-width: 50px;
-  accent-color: #999;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #999 0%, #999 50%, #e6e6e6 50%, #e6e6e6 100%);
   cursor: pointer;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #ccc;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #ccc;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: #e6e6e6;
+}
+
+input[type="range"]::-moz-range-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: #999;
 }
 
 .range-val {
