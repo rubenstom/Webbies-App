@@ -14,8 +14,8 @@
       <span class="logo">Webbies</span>
     </div>
     <div class="header-right">
-      <button class="header-btn">Templates</button>
-      <button class="header-btn">Presets</button>
+      <button class="header-btn" id="templatesBtn">Templates</button>
+      <button class="header-btn" id="presetsBtn">Presets</button>
       <button class="header-btn">Help</button>
     </div>
   </header>
@@ -46,10 +46,10 @@
         </div>
         <div class="bg-options hidden" id="bgGradientOptions">
           <label>Color 1
-            <span class="color-swatch" data-target="gradColor1" data-value="#667eea"></span>
+            <span class="color-swatch" data-target="gradColor1" data-value="#5e5e5e"></span>
           </label>
           <label>Color 2
-            <span class="color-swatch" data-target="gradColor2" data-value="#764ba2"></span>
+            <span class="color-swatch" data-target="gradColor2" data-value="#000000"></span>
           </label>
           <label>Angle
             <input type="range" id="gradAngle" min="0" max="360" value="135">
@@ -199,8 +199,8 @@
       <section class="control-group">
         <h3>Shadow</h3>
         <label>Strength
-          <input type="range" id="shadowStrength" min="0" max="100" value="50">
-          <span class="range-val" id="shadowStrengthVal">50%</span>
+          <input type="range" id="shadowStrength" min="0" max="100" value="20">
+          <span class="range-val" id="shadowStrengthVal">20%</span>
         </label>
         <label>Blur
           <input type="range" id="shadowBlur" min="0" max="100" value="16">
@@ -359,7 +359,7 @@
             <option value="gif">GIF</option>
           </select>
         </label>
-        <label>Resolution
+        <label id="exportResLabel">Resolution
           <select id="exportRes">
             <option value="1x">1x</option>
             <option value="2x">2x</option>
@@ -413,6 +413,85 @@
     </div>
   </div>
 
+  <!-- Timeline Tooltip -->
+  <div class="timeline-tooltip hidden" id="timelineTooltip">0:00.0</div>
+
+  <!-- Templates Dropdown -->
+  <div class="dropdown-panel hidden" id="templatesPanel">
+    <div class="dropdown-item" data-template="smooth-scroll">
+      <strong>Smooth Scroll</strong>
+      <span>Gentle top-to-bottom scroll</span>
+    </div>
+    <div class="dropdown-item" data-template="cinematic-pan">
+      <strong>Cinematic Pan</strong>
+      <span>Slow zoom with subtle tilt</span>
+    </div>
+    <div class="dropdown-item" data-template="hero-reveal">
+      <strong>Hero Reveal</strong>
+      <span>Scale in with fade entry</span>
+    </div>
+    <div class="dropdown-item" data-template="tilt-showcase">
+      <strong>Tilt Showcase</strong>
+      <span>3D perspective rotation</span>
+    </div>
+    <div class="dropdown-item" data-template="bounce-scroll">
+      <strong>Bounce Scroll</strong>
+      <span>Playful bouncy scroll animation</span>
+    </div>
+    <div class="dropdown-item" data-template="dramatic-zoom">
+      <strong>Dramatic Zoom</strong>
+      <span>Zoom out to reveal full page</span>
+    </div>
+  </div>
+
+  <!-- Presets Dropdown -->
+  <div class="dropdown-panel hidden" id="presetsPanel">
+    <div class="dropdown-item" data-preset="minimal-light">
+      <strong>Minimal Light</strong>
+      <span>Clean white background, subtle shadow</span>
+    </div>
+    <div class="dropdown-item" data-preset="minimal-dark">
+      <strong>Minimal Dark</strong>
+      <span>Dark background, soft glow shadow</span>
+    </div>
+    <div class="dropdown-item" data-preset="gradient-purple">
+      <strong>Purple Haze</strong>
+      <span>Purple gradient with rounded corners</span>
+    </div>
+    <div class="dropdown-item" data-preset="gradient-ocean">
+      <strong>Ocean Breeze</strong>
+      <span>Blue-teal gradient, white border</span>
+    </div>
+    <div class="dropdown-item" data-preset="bold-shadow">
+      <strong>Bold Shadow</strong>
+      <span>Strong offset shadow, no corners</span>
+    </div>
+    <div class="dropdown-item" data-preset="floating-card">
+      <strong>Floating Card</strong>
+      <span>Soft blur shadow, large corners</span>
+    </div>
+    <div class="dropdown-item" data-preset="retro-canvas">
+      <strong>Retro Canvas</strong>
+      <span>Grey background, bold grid, hard shadow</span>
+    </div>
+    <div class="dropdown-item" data-preset="back-blur">
+      <strong>Back Blur</strong>
+      <span>Blurred image background, bold border and shadow</span>
+    </div>
+    <div class="dropdown-item" data-preset="base-grid">
+      <strong>Base Grid</strong>
+      <span>Clean white background, subtle grid pattern</span>
+    </div>
+    <div class="dropdown-item" data-preset="colorful-noise">
+      <strong>Colorful Noise</strong>
+      <span>Colorful gradient image, noise texture overlay</span>
+    </div>
+    <div class="dropdown-item" data-preset="dark-grid">
+      <strong>Dark Grid</strong>
+      <span>Dark background, dot pattern, bold shadow</span>
+    </div>
+  </div>
+
   <!-- Color Picker Modal -->
   <div class="cp-overlay hidden" id="cpOverlay">
     <div class="cp-popup" id="cpPopup">
@@ -428,6 +507,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>

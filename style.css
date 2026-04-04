@@ -684,6 +684,60 @@ input[type="range"] {
   box-shadow: 0 0 0 2px rgba(130, 130, 130, 0.3);
 }
 
+/* ── Timeline Tooltip ── */
+.timeline-tooltip {
+  position: fixed;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  background: var(--text);
+  color: white;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* ── Dropdown Panels ── */
+.dropdown-panel {
+  position: fixed;
+  z-index: 900;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  padding: 6px;
+  width: 240px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.dropdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.dropdown-item:hover {
+  background: var(--bg);
+}
+
+.dropdown-item strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.dropdown-item span {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
 /* ── Color Picker ── */
 .cp-overlay {
   position: fixed;
