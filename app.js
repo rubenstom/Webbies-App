@@ -51,6 +51,10 @@ const state = {
   borderEnabled: false,
   shadowEnabled: false,
   entryExitEnabled: false,
+  browserBarEnabled: false,
+  browserBarUrl: 'example.com',
+  browserBarColor: '#e8e8e8',
+  browserBarPillColor: '#d5d5d5',
 };
 
 // --- DOM refs ---
@@ -585,24 +589,84 @@ function getEntryExitModifiers(t) {
 }
 
 // ============================================================
+// BROWSER BAR
+// ============================================================
+function getBrowserBarHeight(phW, sc) {
+  const barH = Math.max(18, Math.min(32, phW * 0.03)) * sc;
+  return barH;
+}
+
+function drawBrowserBar(c, x, y, w, barH, crTop, sc) {
+  // Bar background
+  c.fillStyle = state.browserBarColor;
+  c.beginPath();
+  c.moveTo(x + crTop, y);
+  c.arcTo(x + w, y, x + w, y + barH, crTop);
+  c.arcTo(x + w, y + barH, x, y + barH, 0);
+  c.lineTo(x, y + barH);
+  c.arcTo(x, y, x + w, y, crTop);
+  c.closePath();
+  c.fill();
+
+  // Three dots
+  const dotR = Math.max(2, 3 * sc);
+  const dotGap = Math.max(8, 10 * sc);
+  const dotY = y + barH / 2;
+  const dotStartX = x + Math.max(14, 18 * sc);
+  const dotColors = ['#ff5f57', '#febc2e', '#28c840'];
+  dotColors.forEach((color, i) => {
+    c.fillStyle = color;
+    c.beginPath();
+    c.arc(dotStartX + i * dotGap, dotY, dotR, 0, Math.PI * 2);
+    c.fill();
+  });
+
+  // URL pill
+  const pillH = barH * 0.55;
+  const pillW = Math.min(w * 0.5, Math.max(80 * sc, w * 0.3));
+  const pillX = x + (w - pillW) / 2;
+  const pillY = y + (barH - pillH) / 2;
+  const pillR = pillH / 2;
+  c.fillStyle = state.browserBarPillColor;
+  c.beginPath();
+  roundRect(c, pillX, pillY, pillW, pillH, pillR);
+  c.fill();
+
+  // URL text
+  const fontSize = 8 * sc;
+  c.font = `400 ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+  c.fillStyle = '#555555';
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  const maxTextW = pillW - 12 * sc;
+  c.fillText(state.browserBarUrl || '', pillX + pillW / 2, pillY + pillH / 2, maxTextW);
+  c.textAlign = 'start';
+  c.textBaseline = 'alphabetic';
+}
+
+// ============================================================
 // RENDER
 // ============================================================
 function renderToContext(c, w, h) {
   drawBackground(c, w, h);
 
+  // Placeholder dimensions
+  const padding = (100 - state.placeholderSize) / 100;
+  const maxW = w * (1 - padding), maxH = h * (1 - padding);
+  let phW, phH;
+  if (maxW / maxH > state.aspectRatio) { phH = maxH; phW = phH * state.aspectRatio; }
+  else { phW = maxW; phH = phW / state.aspectRatio; }
+  const sc = w / 1080;
+  const cr = state.cornerRadius * sc;
+  const barH = state.browserBarEnabled ? getBrowserBarHeight(phW, sc) : 0;
+  const totalH = phH + barH;
+  const phX = (w - phW) / 2;
+  const unitY = (h - totalH) / 2; // center the full unit (bar + image)
+  const barY = unitY;
+  const phY = unitY + barH;
+
   // Draw empty placeholder when no image is loaded
   if (!state.image) {
-    const padding = (100 - state.placeholderSize) / 100;
-    const maxW = w * (1 - padding), maxH = h * (1 - padding);
-    let phW, phH;
-    if (maxW / maxH > state.aspectRatio) { phH = maxH; phW = phH * state.aspectRatio; }
-    else { phW = maxW; phH = phW / state.aspectRatio; }
-    const phX = (w - phW) / 2;
-    const phY = (h - phH) / 2;
-    const sc = w / 1080;
-    const cr = state.cornerRadius * sc;
-
-    // Shadow + fill for empty placeholder (draw together so shadow comes from the white rect)
     c.save();
     if (state.shadowEnabled && state.shadowStrength > 0) {
       const { r, g, b } = hexToRgb(state.shadowColor);
@@ -613,10 +677,11 @@ function renderToContext(c, w, h) {
       c.shadowOffsetY = state.shadowOffsetY * sc;
     }
     c.beginPath();
-    roundRect(c, phX, phY, phW, phH, cr);
+    roundRect(c, phX, unitY, phW, totalH, cr);
     c.fillStyle = '#ffffff';
     c.fill();
     c.restore();
+    if (barH > 0) drawBrowserBar(c, phX, barY, phW, barH, cr, sc);
     return;
   }
 
@@ -632,17 +697,6 @@ function renderToContext(c, w, h) {
   const { opacity, offsetYFrac, scaleMod } = getEntryExitModifiers(state.currentTime);
   const finalScale = scaleKf * scaleMod;
 
-  // Placeholder dimensions
-  const padding = (100 - state.placeholderSize) / 100;
-  const maxW = w * (1 - padding), maxH = h * (1 - padding);
-  let phW, phH;
-  if (maxW / maxH > state.aspectRatio) { phH = maxH; phW = phH * state.aspectRatio; }
-  else { phW = maxW; phH = phW / state.aspectRatio; }
-
-  const phX = (w - phW) / 2;
-  const phY = (h - phH) / 2;
-  const sc = w / 1080;
-  const cr = state.cornerRadius * sc;
   const bw = state.borderWidth * sc;
 
   // Position offsets
@@ -670,7 +724,7 @@ function renderToContext(c, w, h) {
   }
   c.translate(-cx, -cy);
 
-  // Shadow: draw directly using canvas shadow properties on the placeholder shape
+  // Shadow: covers the full unit (bar + image)
   if (state.shadowEnabled && state.shadowStrength > 0 && opacity > 0) {
     const { r, g, b } = hexToRgb(state.shadowColor);
     const shadowAlpha = state.shadowStrength / 100 * 0.8 * opacity;
@@ -680,7 +734,7 @@ function renderToContext(c, w, h) {
     c.shadowOffsetX = state.shadowOffsetX * sc;
     c.shadowOffsetY = state.shadowOffsetY * sc;
     c.beginPath();
-    roundRect(c, phX + totalOffsetX, phY + totalOffsetY, phW, phH, cr);
+    roundRect(c, phX + totalOffsetX, unitY + totalOffsetY, phW, totalH, cr);
     c.fillStyle = '#ffffff';
     c.fill();
     c.restore();
@@ -688,12 +742,23 @@ function renderToContext(c, w, h) {
 
   // Offset drawing to account for position
   const drawX = phX + totalOffsetX;
+  const drawBarY = barY + totalOffsetY;
   const drawY = phY + totalOffsetY;
 
-  // Clip and draw image
+  // Clip and draw image (bottom corners only when bar is active)
   c.save();
   c.beginPath();
-  roundRect(c, drawX, drawY, phW, phH, cr);
+  if (barH > 0) {
+    // Only bottom corners rounded
+    c.moveTo(drawX, drawY);
+    c.lineTo(drawX + phW, drawY);
+    c.arcTo(drawX + phW, drawY + phH, drawX, drawY + phH, cr);
+    c.arcTo(drawX, drawY + phH, drawX, drawY, cr);
+    c.lineTo(drawX, drawY);
+    c.closePath();
+  } else {
+    roundRect(c, drawX, drawY, phW, phH, cr);
+  }
   c.clip();
 
   const imgScale = phW / state.image.width;
@@ -704,13 +769,18 @@ function renderToContext(c, w, h) {
     drawX, drawY - scrollY, phW, scaledImgH);
   c.restore();
 
-  // Border
+  // Browser bar
+  if (barH > 0) {
+    drawBrowserBar(c, drawX, drawBarY, phW, barH, cr, sc);
+  }
+
+  // Border (covers full unit)
   if (state.borderEnabled && bw > 0) {
     const { r, g, b } = hexToRgb(state.borderColor);
     c.strokeStyle = `rgba(${r},${g},${b},${state.borderOpacity / 100})`;
     c.lineWidth = bw;
     c.beginPath();
-    roundRect(c, drawX - bw / 2, drawY - bw / 2, phW + bw, phH + bw, cr + bw / 2);
+    roundRect(c, drawX - bw / 2, (barH > 0 ? drawBarY : drawY) - bw / 2, phW + bw, totalH + bw, cr + bw / 2);
     c.stroke();
   }
 
@@ -947,6 +1017,16 @@ function bindControls() {
   bindRange('shadowBlur', 'shadowBlurVal', v => `${v}px`, v => { state.shadowBlur = +v; render(); });
   bindRange('shadowOffsetY', 'shadowOffsetYVal', v => `${v}px`, v => { state.shadowOffsetY = +v; render(); });
   bindRange('shadowOffsetX', 'shadowOffsetXVal', v => `${v}px`, v => { state.shadowOffsetX = +v; render(); });
+
+  document.getElementById('browserBarToggle').addEventListener('change', (e) => {
+    state.browserBarEnabled = e.target.checked;
+    document.getElementById('browserBarOptions').classList.toggle('hidden', !e.target.checked);
+    render();
+  });
+  document.getElementById('browserBarUrl').addEventListener('input', (e) => {
+    state.browserBarUrl = e.target.value;
+    render();
+  });
 
   document.getElementById('aspectRatio').addEventListener('change', (e) => { state.aspectRatio = parseFloat(e.target.value); render(); });
   document.getElementById('canvasPreset').addEventListener('change', (e) => {
