@@ -213,21 +213,35 @@
           <label class="toggle-switch" style="justify-self:end"><input type="checkbox" id="shadowToggle"><span class="toggle-slider"></span></label>
         </label>
         <div id="shadowOptions" class="hidden toggle-options">
+          <label>Type
+            <select id="shadowType">
+              <option value="drop">Drop Shadow</option>
+              <option value="contact">Contact Shadow</option>
+            </select>
+          </label>
           <label>Strength
             <input type="range" id="shadowStrength" min="0" max="100" value="20">
             <span class="range-val" id="shadowStrengthVal">20%</span>
           </label>
-          <label>Blur
+          <label class="drop-shadow-option">Blur
             <input type="range" id="shadowBlur" min="0" max="100" value="16">
             <span class="range-val" id="shadowBlurVal">16px</span>
           </label>
-          <label>Offset Y
+          <label class="drop-shadow-option">Offset Y
             <input type="range" id="shadowOffsetY" min="-50" max="50" value="8">
             <span class="range-val" id="shadowOffsetYVal">8px</span>
           </label>
-          <label>Offset X
+          <label class="drop-shadow-option">Offset X
             <input type="range" id="shadowOffsetX" min="-50" max="50" value="-8">
             <span class="range-val" id="shadowOffsetXVal">-8px</span>
+          </label>
+          <label class="contact-shadow-option hidden">Length
+            <input type="range" id="shadowLength" min="10" max="200" value="60">
+            <span class="range-val" id="shadowLengthVal">60px</span>
+          </label>
+          <label class="contact-shadow-option hidden">Angle
+            <input type="range" id="shadowAngle" min="0" max="360" value="135">
+            <span class="range-val" id="shadowAngleVal">135°</span>
           </label>
           <label>Color
             <span class="color-swatch" data-target="shadowColor" data-value="#000000"></span>
@@ -504,6 +518,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=30"></script>
+  <script src="app.js?v=34"></script>
 </body>
 </html>

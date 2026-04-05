@@ -50,6 +50,9 @@ const state = {
   exportFormat: 'mp4',
   borderEnabled: false,
   shadowEnabled: false,
+  shadowType: 'drop',
+  shadowLength: 60,
+  shadowAngle: 135,
   entryExitEnabled: false,
   browserBarEnabled: false,
   browserBarUrl: 'example.com',
@@ -589,6 +592,46 @@ function getEntryExitModifiers(t) {
 }
 
 // ============================================================
+// CONTACT SHADOW (cast shadow)
+// ============================================================
+function drawContactShadow(c, x, y, w, h, cr, sc, alpha) {
+  const { r, g, b } = hexToRgb(state.shadowColor);
+  const strength = state.shadowStrength / 100 * alpha;
+  const length = state.shadowLength * sc;
+  const angle = state.shadowAngle * Math.PI / 180;
+  const dx = Math.cos(angle);
+  const dy = Math.sin(angle);
+  const steps = 60;
+
+  // Clip out the placeholder so shadow only shows outside
+  c.save();
+  c.beginPath();
+  c.rect(x - length - 10, y - length - 10, w + length * 2 + 20, h + length * 2 + 20);
+  roundRect(c, x, y, w, h, cr);
+  c.clip('evenodd');
+
+  // Draw filled shapes at progressive offsets — no shadowBlur API
+  for (let i = steps; i >= 1; i--) {
+    const t = i / steps;
+    const dist = t * length;
+    const ox = dx * dist;
+    const oy = dy * dist;
+    // Cubic falloff for a smooth, gradual fade
+    const fade = Math.pow(1 - t, 3);
+    const opacity = strength * fade * 0.15;
+    if (opacity < 0.001) continue;
+    // Grow the shape slightly at distance for softer edges
+    const grow = t * length * 0.15;
+    c.fillStyle = `rgba(${r},${g},${b},${opacity})`;
+    c.beginPath();
+    roundRect(c, x + ox - grow / 2, y + oy - grow / 2, w + grow, h + grow, cr + grow / 2);
+    c.fill();
+  }
+
+  c.restore();
+}
+
+// ============================================================
 // BROWSER BAR
 // ============================================================
 function getBrowserBarHeight(phW, sc) {
@@ -667,20 +710,28 @@ function renderToContext(c, w, h) {
 
   // Draw empty placeholder when no image is loaded
   if (!state.image) {
-    c.save();
     if (state.shadowEnabled && state.shadowStrength > 0) {
-      const { r, g, b } = hexToRgb(state.shadowColor);
-      const shadowAlpha = state.shadowStrength / 100 * 0.8;
-      c.shadowColor = `rgba(${r},${g},${b},${shadowAlpha})`;
-      c.shadowBlur = state.shadowBlur * sc;
-      c.shadowOffsetX = state.shadowOffsetX * sc;
-      c.shadowOffsetY = state.shadowOffsetY * sc;
+      if (state.shadowType === 'contact') {
+        drawContactShadow(c, phX, unitY, phW, totalH, cr, sc, 1);
+      } else {
+        c.save();
+        const { r, g, b } = hexToRgb(state.shadowColor);
+        const shadowAlpha = state.shadowStrength / 100 * 0.8;
+        c.shadowColor = `rgba(${r},${g},${b},${shadowAlpha})`;
+        c.shadowBlur = state.shadowBlur * sc;
+        c.shadowOffsetX = state.shadowOffsetX * sc;
+        c.shadowOffsetY = state.shadowOffsetY * sc;
+        c.beginPath();
+        roundRect(c, phX, unitY, phW, totalH, cr);
+        c.fillStyle = '#ffffff';
+        c.fill();
+        c.restore();
+      }
     }
     c.beginPath();
     roundRect(c, phX, unitY, phW, totalH, cr);
     c.fillStyle = '#ffffff';
     c.fill();
-    c.restore();
     if (barH > 0) drawBrowserBar(c, phX, barY, phW, barH, cr, sc);
     // Border for empty placeholder
     const bwEmpty = state.borderWidth * sc;
@@ -736,18 +787,22 @@ function renderToContext(c, w, h) {
 
   // Shadow: covers the full unit (bar + image)
   if (state.shadowEnabled && state.shadowStrength > 0 && opacity > 0) {
-    const { r, g, b } = hexToRgb(state.shadowColor);
-    const shadowAlpha = state.shadowStrength / 100 * 0.8 * opacity;
-    c.save();
-    c.shadowColor = `rgba(${r},${g},${b},${shadowAlpha})`;
-    c.shadowBlur = state.shadowBlur * sc;
-    c.shadowOffsetX = state.shadowOffsetX * sc;
-    c.shadowOffsetY = state.shadowOffsetY * sc;
-    c.beginPath();
-    roundRect(c, phX + totalOffsetX, unitY + totalOffsetY, phW, totalH, cr);
-    c.fillStyle = '#ffffff';
-    c.fill();
-    c.restore();
+    if (state.shadowType === 'contact') {
+      drawContactShadow(c, phX + totalOffsetX, unitY + totalOffsetY, phW, totalH, cr, sc, opacity);
+    } else {
+      const { r, g, b } = hexToRgb(state.shadowColor);
+      const shadowAlpha = state.shadowStrength / 100 * 0.8 * opacity;
+      c.save();
+      c.shadowColor = `rgba(${r},${g},${b},${shadowAlpha})`;
+      c.shadowBlur = state.shadowBlur * sc;
+      c.shadowOffsetX = state.shadowOffsetX * sc;
+      c.shadowOffsetY = state.shadowOffsetY * sc;
+      c.beginPath();
+      roundRect(c, phX + totalOffsetX, unitY + totalOffsetY, phW, totalH, cr);
+      c.fillStyle = '#ffffff';
+      c.fill();
+      c.restore();
+    }
   }
 
   // Offset drawing to account for position
@@ -1117,6 +1172,19 @@ function bindControls() {
     document.getElementById('shadowOptions').classList.toggle('hidden', !e.target.checked);
     render();
   });
+  document.getElementById('shadowType').addEventListener('change', (e) => {
+    state.shadowType = e.target.value;
+    const isContact = state.shadowType === 'contact';
+    document.querySelectorAll('.drop-shadow-option').forEach(el => {
+      el.classList.toggle('hidden', isContact);
+    });
+    document.querySelectorAll('.contact-shadow-option').forEach(el => {
+      el.classList.toggle('hidden', !isContact);
+    });
+    render();
+  });
+  bindRange('shadowLength', 'shadowLengthVal', v => v + 'px', v => { state.shadowLength = +v; render(); });
+  bindRange('shadowAngle', 'shadowAngleVal', v => v + '°', v => { state.shadowAngle = +v; render(); });
   document.getElementById('entryExitToggle').addEventListener('change', (e) => {
     state.entryExitEnabled = e.target.checked;
     document.getElementById('entryExitOptions').classList.toggle('hidden', !e.target.checked);
