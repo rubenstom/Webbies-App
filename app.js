@@ -682,6 +682,16 @@ function renderToContext(c, w, h) {
     c.fill();
     c.restore();
     if (barH > 0) drawBrowserBar(c, phX, barY, phW, barH, cr, sc);
+    // Border for empty placeholder
+    const bwEmpty = state.borderWidth * sc;
+    if (state.borderEnabled && bwEmpty > 0) {
+      const { r, g, b } = hexToRgb(state.borderColor);
+      c.strokeStyle = `rgba(${r},${g},${b},${state.borderOpacity / 100})`;
+      c.lineWidth = bwEmpty;
+      c.beginPath();
+      roundRect(c, phX - bwEmpty / 2, unitY - bwEmpty / 2, phW + bwEmpty, totalH + bwEmpty, cr + bwEmpty / 2);
+      c.stroke();
+    }
     return;
   }
 
@@ -1567,6 +1577,10 @@ function applyTemplate(id) {
 function applyPreset(id) {
   const p = PRESETS[id];
   if (!p) return;
+  // Reset toggleable features before applying preset defaults
+  state.browserBarEnabled = false;
+  state.browserBarColor = '#e8e8e8';
+  state.browserBarPillColor = '#d5d5d5';
   Object.keys(p).forEach(k => { state[k] = p[k]; });
 
   const syncRange = (id, val, fmt) => {
