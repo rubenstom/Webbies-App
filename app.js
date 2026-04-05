@@ -1551,6 +1551,26 @@ const TEMPLATES = {
       { time: 1, scroll: 100, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'bounceOut' },
     ],
   },
+  'angled-drop': {
+    duration: 8, defaultEasing: 'easeInOut', loopMode: 'loop',
+    entryAnim: 'none', exitAnim: 'none', entryDuration: 10, exitDuration: 10,
+    keyframes: [
+      { time: 0, scroll: 0, scale: 100, rotation: -45, tiltX: 0, tiltY: 0, posX: -100, posY: -30, easing: 'easeInOut' },
+      { time: 0.125, scroll: 0, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
+      { time: 0.875, scroll: 100, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
+      { time: 1, scroll: 100, scale: 100, rotation: 45, tiltX: 0, tiltY: 0, posX: 100, posY: 30, easing: 'easeInOut' },
+    ],
+  },
+  'scaled-scroll': {
+    duration: 8, defaultEasing: 'easeInOut', loopMode: 'loop',
+    entryAnim: 'none', exitAnim: 'none', entryDuration: 10, exitDuration: 10,
+    keyframes: [
+      { time: 0, scroll: 0, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
+      { time: 0.125, scroll: 20, scale: 120, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
+      { time: 0.875, scroll: 80, scale: 120, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
+      { time: 1, scroll: 100, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
+    ],
+  },
 };
 
 const PRESETS = {
@@ -1608,6 +1628,13 @@ const PRESETS = {
     borderWidth: 8, borderColor: '#ffffff', borderOpacity: 20,
     shadowStrength: 100, shadowBlur: 30, shadowOffsetX: 0, shadowOffsetY: 30, shadowColor: '#000000',
   },
+  'grey-gradient': {
+    bgType: 'gradient', gradColor1: '#dfdfdf', gradColor2: '#000000', gradAngle: 135,
+    bgPattern: 'noise', patternOpacity: 7, patternSize: 20, patternColor: '#000000',
+    cornerRadius: 12, placeholderSize: 65,
+    borderWidth: 20, borderColor: '#ffffff', borderOpacity: 40,
+    shadowType: 'contact', shadowStrength: 20, shadowLength: 150, shadowAngle: 135, shadowColor: '#000000',
+  },
 };
 
 function applyTemplate(id) {
@@ -1649,6 +1676,9 @@ function applyPreset(id) {
   state.browserBarEnabled = false;
   state.browserBarColor = '#e8e8e8';
   state.browserBarPillColor = '#d5d5d5';
+  state.shadowType = 'drop';
+  state.shadowLength = 60;
+  state.shadowAngle = 135;
   Object.keys(p).forEach(k => { state[k] = p[k]; });
 
   const syncRange = (id, val, fmt) => {
@@ -1695,6 +1725,18 @@ function applyPreset(id) {
   state.shadowEnabled = (state.shadowStrength > 0);
   document.getElementById('shadowToggle').checked = state.shadowEnabled;
   document.getElementById('shadowOptions').classList.toggle('hidden', !state.shadowEnabled);
+
+  // Sync shadow type UI
+  document.getElementById('shadowType').value = state.shadowType;
+  const isContact = state.shadowType === 'contact';
+  document.querySelectorAll('.drop-shadow-option').forEach(el => {
+    el.classList.toggle('hidden', isContact);
+  });
+  document.querySelectorAll('.contact-shadow-option').forEach(el => {
+    el.classList.toggle('hidden', !isContact);
+  });
+  syncRange('shadowLength', state.shadowLength, v => v + 'px');
+  syncRange('shadowAngle', state.shadowAngle, v => v + '°');
 
   // Sync browser bar toggle
   state.browserBarEnabled = !!state.browserBarEnabled;
