@@ -171,6 +171,13 @@ body {
   border-color: #999;
 }
 
+/* Nested toggle options */
+.toggle-options {
+  margin-left: 10px;
+  padding-left: 12px;
+  border-left: 2px solid var(--border);
+}
+
 .toggle-switch input {
   opacity: 0;
   width: 0;

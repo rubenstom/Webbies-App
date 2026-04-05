@@ -33,7 +33,7 @@ const state = {
   canvasH: 2160,
   duration: 8,
   defaultEasing: 'easeInOut',
-  loopMode: 'none',
+  loopMode: 'loop',
   entryAnim: 'none',
   exitAnim: 'none',
   entryDuration: 10,
@@ -1447,15 +1447,7 @@ const TEMPLATES = {
       { time: 1, scroll: 100, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
     ],
   },
-  'cinematic-pan': {
-    duration: 10, defaultEasing: 'easeInOutCubic', loopMode: 'none',
-    entryAnim: 'fadeIn', exitAnim: 'fadeOut', entryDuration: 15, exitDuration: 15,
-    keyframes: [
-      { time: 0, scroll: 0, scale: 110, rotation: 0, tiltX: 0, tiltY: -5, posX: 0, posY: 0, easing: 'easeInOutCubic' },
-      { time: 1, scroll: 80, scale: 100, rotation: 0, tiltX: 0, tiltY: 5, posX: 0, posY: 0, easing: 'easeInOutCubic' },
-    ],
-  },
-  'hero-reveal': {
+'hero-reveal': {
     duration: 6, defaultEasing: 'easeInOutQuart', loopMode: 'none',
     entryAnim: 'scaleIn', exitAnim: 'none', entryDuration: 25, exitDuration: 10,
     keyframes: [
@@ -1481,15 +1473,6 @@ const TEMPLATES = {
       { time: 1, scroll: 100, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'bounceOut' },
     ],
   },
-  'dramatic-zoom': {
-    duration: 10, defaultEasing: 'easeInOutCubic', loopMode: 'none',
-    entryAnim: 'fadeIn', exitAnim: 'fadeOut', entryDuration: 10, exitDuration: 10,
-    keyframes: [
-      { time: 0, scroll: 30, scale: 150, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: -10, easing: 'easeInOutCubic' },
-      { time: 0.4, scroll: 30, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
-      { time: 1, scroll: 100, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
-    ],
-  },
 };
 
 const PRESETS = {
@@ -1497,28 +1480,9 @@ const PRESETS = {
     bgType: 'solid', bgColor: '#f5f5f5',
     cornerRadius: 12, borderWidth: 0, placeholderSize: 70,
     shadowStrength: 30, shadowBlur: 20, shadowOffsetX: 0, shadowOffsetY: 8, shadowColor: '#000000',
+    browserBarEnabled: true, browserBarColor: '#dadada', browserBarPillColor: '#ffffff',
   },
-  'minimal-dark': {
-    bgType: 'solid', bgColor: '#1a1a2e',
-    cornerRadius: 12, borderWidth: 0, placeholderSize: 70,
-    shadowStrength: 40, shadowBlur: 30, shadowOffsetX: 0, shadowOffsetY: 10, shadowColor: '#000000',
-  },
-  'gradient-purple': {
-    bgType: 'gradient', gradColor1: '#667eea', gradColor2: '#764ba2', gradAngle: 135,
-    cornerRadius: 16, borderWidth: 0, placeholderSize: 65,
-    shadowStrength: 50, shadowBlur: 30, shadowOffsetX: 0, shadowOffsetY: 12, shadowColor: '#000000',
-  },
-  'gradient-ocean': {
-    bgType: 'gradient', gradColor1: '#2193b0', gradColor2: '#6dd5ed', gradAngle: 160,
-    cornerRadius: 12, borderWidth: 2, borderColor: '#ffffff', borderOpacity: 60, placeholderSize: 68,
-    shadowStrength: 35, shadowBlur: 24, shadowOffsetX: 0, shadowOffsetY: 8, shadowColor: '#000000',
-  },
-  'bold-shadow': {
-    bgType: 'solid', bgColor: '#e8e8e8',
-    cornerRadius: 0, borderWidth: 0, placeholderSize: 75,
-    shadowStrength: 70, shadowBlur: 4, shadowOffsetX: -12, shadowOffsetY: 12, shadowColor: '#000000',
-  },
-  'floating-card': {
+'floating-card': {
     bgType: 'solid', bgColor: '#f0f0f0',
     cornerRadius: 24, borderWidth: 0, placeholderSize: 65,
     shadowStrength: 25, shadowBlur: 40, shadowOffsetX: 0, shadowOffsetY: 16, shadowColor: '#000000',
@@ -1529,9 +1493,17 @@ const PRESETS = {
     cornerRadius: 8, placeholderSize: 75,
     borderWidth: 0, borderColor: '#ffffff', borderOpacity: 60,
     shadowStrength: 35, shadowBlur: 0, shadowOffsetX: -20, shadowOffsetY: 20, shadowColor: '#000000',
+    browserBarEnabled: true,
   },
   'back-blur': {
-    bgType: 'image', bgImageSrc: 'img/14.jpg', bgImageFit: 'cover', bgImageBlur: 20,
+    bgType: 'image', bgImageSrc: 'img/01.jpg', bgImageFit: 'cover', bgImageBlur: 20,
+    bgPattern: 'noise', patternOpacity: 25, patternSize: 20, patternColor: '#ffffff',
+    cornerRadius: 14, placeholderSize: 75,
+    borderWidth: 10, borderColor: '#ffffff', borderOpacity: 50,
+    shadowStrength: 50, shadowBlur: 50, shadowOffsetX: 0, shadowOffsetY: 50, shadowColor: '#000000',
+  },
+  'burned-blur': {
+    bgType: 'image', bgImageSrc: 'img/14.jpg', bgImageFit: 'cover', bgImageBlur: 50,
     bgPattern: 'none', patternOpacity: 10, patternSize: 20, patternColor: '#ffffff',
     cornerRadius: 14, placeholderSize: 75,
     borderWidth: 10, borderColor: '#ffffff', borderOpacity: 50,
@@ -1641,6 +1613,11 @@ function applyPreset(id) {
   state.shadowEnabled = (state.shadowStrength > 0);
   document.getElementById('shadowToggle').checked = state.shadowEnabled;
   document.getElementById('shadowOptions').classList.toggle('hidden', !state.shadowEnabled);
+
+  // Sync browser bar toggle
+  state.browserBarEnabled = !!state.browserBarEnabled;
+  document.getElementById('browserBarToggle').checked = state.browserBarEnabled;
+  document.getElementById('browserBarOptions').classList.toggle('hidden', !state.browserBarEnabled);
 
   // Sync pattern controls
   document.getElementById('bgPattern').value = state.bgPattern;
