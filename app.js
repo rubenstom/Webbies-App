@@ -632,6 +632,102 @@ function drawContactShadow(c, x, y, w, h, cr, sc, alpha) {
 }
 
 // ============================================================
+// PERSPECTIVE TRANSFORM (slice-based trapezoid distortion)
+// ============================================================
+let _perspCanvas = null;
+let _perspCtx = null;
+let _perspInterCanvas = null;
+
+function drawWithPerspective(ctx, srcCanvas, dx, dy, dw, dh, tiltX, tiltY) {
+  const sw = srcCanvas.width;
+  const sh = srcCanvas.height;
+  // Perspective intensity: controls how much edges shrink/grow
+  const fx = Math.sin(tiltX * Math.PI / 180) * 0.5;
+  const fy = Math.sin(tiltY * Math.PI / 180) * 0.5;
+  const hasTiltX = Math.abs(tiltX) > 0.5;
+  const hasTiltY = Math.abs(tiltY) > 0.5;
+
+  // Dynamic slice count: more slices for larger content / stronger perspective = smoother edges
+  const maxPersp = Math.max(Math.abs(fx), Math.abs(fy));
+  const maxDim = Math.max(dw, dh);
+  const SLICES = Math.min(500, Math.max(100, Math.ceil(maxPersp * maxDim)));
+
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  if (hasTiltX && hasTiltY) {
+    // Two-pass: apply tiltX to expanded intermediate canvas, then tiltY to destination
+    // Expand intermediate to prevent clipping from wider slices
+    const expandW = Math.ceil(sw * Math.abs(fx));
+    const interW = sw + expandW * 2;
+
+    if (!_perspInterCanvas || _perspInterCanvas.width !== interW || _perspInterCanvas.height !== sh) {
+      _perspInterCanvas = document.createElement('canvas');
+      _perspInterCanvas.width = interW;
+      _perspInterCanvas.height = sh;
+    } else {
+      _perspInterCanvas.getContext('2d').clearRect(0, 0, interW, sh);
+    }
+    const ic = _perspInterCanvas.getContext('2d');
+    ic.imageSmoothingEnabled = true;
+    ic.imageSmoothingQuality = 'high';
+
+    // Pass 1: tiltX — horizontal slices, width varies top→bottom, centered in expanded canvas
+    for (let i = 0; i < SLICES; i++) {
+      const t = (i + 0.5) / SLICES;
+      const sy = Math.floor(i / SLICES * sh);
+      const sH = Math.ceil(sh / SLICES) + 1;
+      const wScale = 1 + fx * (t - 0.5) * 2;
+      const sliceW = sw * wScale;
+      const sliceX = (interW - sliceW) / 2;
+      ic.drawImage(srcCanvas, 0, sy, sw, sH, sliceX, sy, sliceW, sH);
+    }
+
+    // Pass 2: tiltY — vertical slices from expanded intermediate, height varies left→right
+    const fullW = dw + expandW * 2;
+    for (let i = 0; i < SLICES; i++) {
+      const t = (i + 0.5) / SLICES;
+      const sx = Math.floor(i / SLICES * interW);
+      const sW = Math.ceil(interW / SLICES) + 1;
+      const hScale = 1 + fy * (t - 0.5) * 2;
+      const sliceH = dh * hScale;
+      const sliceY = dy + (dh - sliceH) / 2;
+      const destX = dx - expandW + i / SLICES * fullW;
+      const destW = fullW / SLICES + 0.5;
+      ctx.drawImage(_perspInterCanvas, sx, 0, sW, sh, destX, sliceY, destW, sliceH);
+    }
+
+  } else if (hasTiltX) {
+    // Single pass: tiltX — horizontal slices, width varies top→bottom
+    for (let i = 0; i < SLICES; i++) {
+      const t = (i + 0.5) / SLICES;
+      const sy = Math.floor(i / SLICES * sh);
+      const sH = Math.ceil(sh / SLICES) + 1;
+      const wScale = 1 + fx * (t - 0.5) * 2;
+      const sliceW = dw * wScale;
+      const sliceX = dx + (dw - sliceW) / 2;
+      const destY = dy + i / SLICES * dh;
+      const destH = dh / SLICES + 0.5;
+      ctx.drawImage(srcCanvas, 0, sy, sw, sH, sliceX, destY, sliceW, destH);
+    }
+
+  } else {
+    // Single pass: tiltY — vertical slices, height varies left→right
+    for (let i = 0; i < SLICES; i++) {
+      const t = (i + 0.5) / SLICES;
+      const sx = Math.floor(i / SLICES * sw);
+      const sW = Math.ceil(sw / SLICES) + 1;
+      const hScale = 1 + fy * (t - 0.5) * 2;
+      const sliceH = dh * hScale;
+      const sliceY = dy + (dh - sliceH) / 2;
+      const destX = dx + i / SLICES * dw;
+      const destW = dw / SLICES + 0.5;
+      ctx.drawImage(srcCanvas, sx, 0, sW, sh, destX, sliceY, destW, sliceH);
+    }
+  }
+}
+
+// ============================================================
 // BROWSER BAR
 // ============================================================
 function getBrowserBarHeight(phW, sc) {
@@ -767,89 +863,187 @@ function renderToContext(c, w, h) {
   const totalOffsetX = kfOffsetX;
   const totalOffsetY = kfOffsetY + slideOffsetY;
 
-  // Main content with full transforms
-  c.save();
-  c.globalAlpha = opacity;
-
-  // Translate to center, apply transforms, translate back
+  // Center for transforms
   const cx = w / 2 + totalOffsetX;
   const cy = h / 2 + totalOffsetY;
-  c.translate(cx, cy);
-  c.rotate(rotation * Math.PI / 180);
-  c.scale(finalScale, finalScale);
+  const usePerspective = Math.abs(tiltX) > 0.5 || Math.abs(tiltY) > 0.5;
 
-  if (tiltX !== 0 || tiltY !== 0) {
-    const skewX = tiltY * Math.PI / 180 * 0.3;
-    const skewY = tiltX * Math.PI / 180 * 0.3;
-    c.transform(1 - Math.abs(tiltY) * 0.005, skewY, skewX, 1 - Math.abs(tiltX) * 0.005, 0, 0);
-  }
-  c.translate(-cx, -cy);
+  if (usePerspective) {
+    // ===== PERSPECTIVE RENDERING PATH =====
+    // Render content to offscreen canvas, then composite with trapezoid distortion
 
-  // Shadow: covers the full unit (bar + image)
-  if (state.shadowEnabled && state.shadowStrength > 0 && opacity > 0) {
-    if (state.shadowType === 'contact') {
-      drawContactShadow(c, phX + totalOffsetX, unitY + totalOffsetY, phW, totalH, cr, sc, opacity);
-    } else {
-      const { r, g, b } = hexToRgb(state.shadowColor);
-      const shadowAlpha = state.shadowStrength / 100 * 0.8 * opacity;
-      c.save();
-      c.shadowColor = `rgba(${r},${g},${b},${shadowAlpha})`;
-      c.shadowBlur = state.shadowBlur * sc;
-      c.shadowOffsetX = state.shadowOffsetX * sc;
-      c.shadowOffsetY = state.shadowOffsetY * sc;
-      c.beginPath();
-      roundRect(c, phX + totalOffsetX, unitY + totalOffsetY, phW, totalH, cr);
-      c.fillStyle = '#ffffff';
-      c.fill();
-      c.restore();
+    // Calculate margin for shadow/border overflow
+    let shadowMargin = 0;
+    if (state.shadowEnabled && state.shadowStrength > 0) {
+      if (state.shadowType === 'contact') {
+        shadowMargin = state.shadowLength * sc * 1.5;
+      } else {
+        shadowMargin = state.shadowBlur * sc +
+          Math.max(Math.abs(state.shadowOffsetX * sc), Math.abs(state.shadowOffsetY * sc));
+      }
     }
-  }
+    const borderMargin = state.borderEnabled ? bw * 2 : 0;
+    const perspMargin = Math.ceil(Math.max(shadowMargin, borderMargin, 10));
 
-  // Offset drawing to account for position
-  const drawX = phX + totalOffsetX;
-  const drawBarY = barY + totalOffsetY;
-  const drawY = phY + totalOffsetY;
+    const offW = Math.ceil(phW + perspMargin * 2);
+    const offH = Math.ceil(totalH + perspMargin * 2);
+    if (!_perspCanvas || _perspCanvas.width !== offW || _perspCanvas.height !== offH) {
+      _perspCanvas = document.createElement('canvas');
+      _perspCanvas.width = offW;
+      _perspCanvas.height = offH;
+      _perspCtx = _perspCanvas.getContext('2d');
+    } else {
+      _perspCtx.clearRect(0, 0, offW, offH);
+    }
+    const oc = _perspCtx;
 
-  // Clip and draw image (bottom corners only when bar is active)
-  c.save();
-  c.beginPath();
-  if (barH > 0) {
-    // Only bottom corners rounded
-    c.moveTo(drawX, drawY);
-    c.lineTo(drawX + phW, drawY);
-    c.arcTo(drawX + phW, drawY + phH, drawX, drawY + phH, cr);
-    c.arcTo(drawX, drawY + phH, drawX, drawY, cr);
-    c.lineTo(drawX, drawY);
-    c.closePath();
+    // Content origin on offscreen canvas
+    const ox = perspMargin;
+    const oy = perspMargin;
+
+    // Shadow on offscreen
+    if (state.shadowEnabled && state.shadowStrength > 0 && opacity > 0) {
+      if (state.shadowType === 'contact') {
+        drawContactShadow(oc, ox, oy, phW, totalH, cr, sc, opacity);
+      } else {
+        const { r, g, b } = hexToRgb(state.shadowColor);
+        const shadowAlpha = state.shadowStrength / 100 * 0.8 * opacity;
+        oc.save();
+        oc.shadowColor = `rgba(${r},${g},${b},${shadowAlpha})`;
+        oc.shadowBlur = state.shadowBlur * sc;
+        oc.shadowOffsetX = state.shadowOffsetX * sc;
+        oc.shadowOffsetY = state.shadowOffsetY * sc;
+        oc.beginPath();
+        roundRect(oc, ox, oy, phW, totalH, cr);
+        oc.fillStyle = '#ffffff';
+        oc.fill();
+        oc.restore();
+      }
+    }
+
+    // Image on offscreen
+    const oImgY = oy + barH;
+    oc.save();
+    oc.beginPath();
+    if (barH > 0) {
+      oc.moveTo(ox, oImgY);
+      oc.lineTo(ox + phW, oImgY);
+      oc.arcTo(ox + phW, oImgY + phH, ox, oImgY + phH, cr);
+      oc.arcTo(ox, oImgY + phH, ox, oImgY, cr);
+      oc.lineTo(ox, oImgY);
+      oc.closePath();
+    } else {
+      roundRect(oc, ox, oy, phW, phH, cr);
+    }
+    oc.clip();
+    const imgScaleP = phW / state.image.width;
+    const scaledImgHP = state.image.height * imgScaleP;
+    const maxScrollP = Math.max(0, scaledImgHP - phH);
+    const scrollYP = maxScrollP * scrollPct;
+    oc.drawImage(state.image, 0, 0, state.image.width, state.image.height,
+      ox, oImgY - scrollYP, phW, scaledImgHP);
+    oc.restore();
+
+    // Browser bar on offscreen
+    if (barH > 0) drawBrowserBar(oc, ox, oy, phW, barH, cr, sc);
+
+    // Border on offscreen
+    if (state.borderEnabled && bw > 0) {
+      const { r, g, b } = hexToRgb(state.borderColor);
+      oc.strokeStyle = `rgba(${r},${g},${b},${state.borderOpacity / 100})`;
+      oc.lineWidth = bw;
+      oc.beginPath();
+      roundRect(oc, ox - bw / 2, oy - bw / 2, phW + bw, totalH + bw, cr + bw / 2);
+      oc.stroke();
+    }
+
+    // Composite to main canvas with perspective + other transforms
+    c.save();
+    c.globalAlpha = opacity;
+    c.translate(cx, cy);
+    c.rotate(rotation * Math.PI / 180);
+    c.scale(finalScale, finalScale);
+    c.translate(-cx, -cy);
+
+    drawWithPerspective(c, _perspCanvas,
+      phX + totalOffsetX - perspMargin, unitY + totalOffsetY - perspMargin,
+      offW, offH, tiltX, tiltY);
+
+    c.restore();
+
   } else {
-    roundRect(c, drawX, drawY, phW, phH, cr);
-  }
-  c.clip();
+    // ===== NORMAL RENDERING PATH (no tilt) =====
+    c.save();
+    c.globalAlpha = opacity;
+    c.translate(cx, cy);
+    c.rotate(rotation * Math.PI / 180);
+    c.scale(finalScale, finalScale);
+    c.translate(-cx, -cy);
 
-  const imgScale = phW / state.image.width;
-  const scaledImgH = state.image.height * imgScale;
-  const maxScroll = Math.max(0, scaledImgH - phH);
-  const scrollY = maxScroll * scrollPct;
-  c.drawImage(state.image, 0, 0, state.image.width, state.image.height,
-    drawX, drawY - scrollY, phW, scaledImgH);
-  c.restore();
+    // Shadow
+    if (state.shadowEnabled && state.shadowStrength > 0 && opacity > 0) {
+      if (state.shadowType === 'contact') {
+        drawContactShadow(c, phX + totalOffsetX, unitY + totalOffsetY, phW, totalH, cr, sc, opacity);
+      } else {
+        const { r, g, b } = hexToRgb(state.shadowColor);
+        const shadowAlpha = state.shadowStrength / 100 * 0.8 * opacity;
+        c.save();
+        c.shadowColor = `rgba(${r},${g},${b},${shadowAlpha})`;
+        c.shadowBlur = state.shadowBlur * sc;
+        c.shadowOffsetX = state.shadowOffsetX * sc;
+        c.shadowOffsetY = state.shadowOffsetY * sc;
+        c.beginPath();
+        roundRect(c, phX + totalOffsetX, unitY + totalOffsetY, phW, totalH, cr);
+        c.fillStyle = '#ffffff';
+        c.fill();
+        c.restore();
+      }
+    }
 
-  // Browser bar
-  if (barH > 0) {
-    drawBrowserBar(c, drawX, drawBarY, phW, barH, cr, sc);
-  }
+    const drawX = phX + totalOffsetX;
+    const drawBarY = barY + totalOffsetY;
+    const drawY = phY + totalOffsetY;
 
-  // Border (covers full unit)
-  if (state.borderEnabled && bw > 0) {
-    const { r, g, b } = hexToRgb(state.borderColor);
-    c.strokeStyle = `rgba(${r},${g},${b},${state.borderOpacity / 100})`;
-    c.lineWidth = bw;
+    // Clip and draw image
+    c.save();
     c.beginPath();
-    roundRect(c, drawX - bw / 2, (barH > 0 ? drawBarY : drawY) - bw / 2, phW + bw, totalH + bw, cr + bw / 2);
-    c.stroke();
-  }
+    if (barH > 0) {
+      c.moveTo(drawX, drawY);
+      c.lineTo(drawX + phW, drawY);
+      c.arcTo(drawX + phW, drawY + phH, drawX, drawY + phH, cr);
+      c.arcTo(drawX, drawY + phH, drawX, drawY, cr);
+      c.lineTo(drawX, drawY);
+      c.closePath();
+    } else {
+      roundRect(c, drawX, drawY, phW, phH, cr);
+    }
+    c.clip();
 
-  c.restore(); // globalAlpha
+    const imgScale = phW / state.image.width;
+    const scaledImgH = state.image.height * imgScale;
+    const maxScroll = Math.max(0, scaledImgH - phH);
+    const scrollY = maxScroll * scrollPct;
+    c.drawImage(state.image, 0, 0, state.image.width, state.image.height,
+      drawX, drawY - scrollY, phW, scaledImgH);
+    c.restore();
+
+    // Browser bar
+    if (barH > 0) {
+      drawBrowserBar(c, drawX, drawBarY, phW, barH, cr, sc);
+    }
+
+    // Border
+    if (state.borderEnabled && bw > 0) {
+      const { r, g, b } = hexToRgb(state.borderColor);
+      c.strokeStyle = `rgba(${r},${g},${b},${state.borderOpacity / 100})`;
+      c.lineWidth = bw;
+      c.beginPath();
+      roundRect(c, drawX - bw / 2, (barH > 0 ? drawBarY : drawY) - bw / 2, phW + bw, totalH + bw, cr + bw / 2);
+      c.stroke();
+    }
+
+    c.restore();
+  }
 }
 
 function render() {
