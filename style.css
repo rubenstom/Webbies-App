@@ -864,19 +864,17 @@ input[type="range"]::-moz-range-progress {
   position: fixed;
   inset: 0;
   z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.3);
 }
 
 .cp-popup {
+  position: fixed;
   background: var(--surface);
   border-radius: var(--radius);
   border: 1px solid var(--border);
   box-shadow: 0 12px 40px rgba(0,0,0,0.2);
   padding: 16px;
   width: 260px;
+  z-index: 1001;
 }
 
 .cp-body {

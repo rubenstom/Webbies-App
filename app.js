@@ -239,6 +239,12 @@ function cpUpdate() {
   const hex = cpCurrentHex();
   cpPreview.style.background = hex;
   cpHex.value = hex;
+  // Live preview: apply color immediately
+  if (cpState.swatchEl) {
+    cpState.swatchEl.style.background = hex;
+    cpState.swatchEl.dataset.value = hex;
+  }
+  if (cpState.callback) cpState.callback(hex);
 }
 
 function openColorPicker(hex, swatchEl, callback) {
@@ -247,6 +253,23 @@ function openColorPicker(hex, swatchEl, callback) {
   cpState = { h: hsv.h, s: hsv.s, v: hsv.v, callback, swatchEl };
   cpOverlay.classList.remove('hidden');
   cpUpdate();
+  // Position popup to the right of the swatch
+  const cpPopup = document.getElementById('cpPopup');
+  const rect = swatchEl.getBoundingClientRect();
+  let left = rect.right + 10;
+  let top = rect.top - 60;
+  // Keep within viewport
+  const popupW = 260;
+  const popupH = cpPopup.offsetHeight || 300;
+  if (left + popupW > window.innerWidth - 10) {
+    left = rect.left - popupW - 10;
+  }
+  if (top + popupH > window.innerHeight - 10) {
+    top = window.innerHeight - popupH - 10;
+  }
+  if (top < 10) top = 10;
+  cpPopup.style.left = left + 'px';
+  cpPopup.style.top = top + 'px';
 }
 
 // SV canvas interaction
@@ -292,26 +315,14 @@ cpHex.addEventListener('change', () => {
   }
 });
 
-// OK button
+// OK button — color already applied live, just close
 cpOk.addEventListener('click', () => {
-  const hex = cpCurrentHex();
-  if (cpState.swatchEl) {
-    cpState.swatchEl.style.background = hex;
-    cpState.swatchEl.dataset.value = hex;
-  }
-  if (cpState.callback) cpState.callback(hex);
   cpOverlay.classList.add('hidden');
 });
 
 // Close on overlay click
 cpOverlay.addEventListener('click', (e) => {
   if (e.target === cpOverlay) {
-    const hex = cpCurrentHex();
-    if (cpState.swatchEl) {
-      cpState.swatchEl.style.background = hex;
-      cpState.swatchEl.dataset.value = hex;
-    }
-    if (cpState.callback) cpState.callback(hex);
     cpOverlay.classList.add('hidden');
   }
 });
@@ -1738,11 +1749,21 @@ const TEMPLATES = {
     ],
   },
   'bounce-scroll': {
-    duration: 6, defaultEasing: 'bounceOut', loopMode: 'none',
+    duration: 12, defaultEasing: 'easeInOut', loopMode: 'loop',
     entryAnim: 'slideUp', exitAnim: 'none', entryDuration: 20, exitDuration: 10,
     keyframes: [
       { time: 0, scroll: 0, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'bounceOut' },
-      { time: 1, scroll: 100, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'bounceOut' },
+      { time: 0.833, scroll: 100, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
+      { time: 1, scroll: 0, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'linear' },
+    ],
+  },
+  'scroll-up': {
+    duration: 9, defaultEasing: 'easeInOut', loopMode: 'loop',
+    entryAnim: 'none', exitAnim: 'none', entryDuration: 10, exitDuration: 10,
+    keyframes: [
+      { time: 0, scroll: 0, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
+      { time: 0.778, scroll: 100, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
+      { time: 1, scroll: 0, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
     ],
   },
   'angled-drop': {
@@ -1763,6 +1784,14 @@ const TEMPLATES = {
       { time: 0.125, scroll: 20, scale: 120, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
       { time: 0.875, scroll: 80, scale: 120, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
       { time: 1, scroll: 100, scale: 100, rotation: 0, tiltX: 0, tiltY: 0, posX: 0, posY: 0, easing: 'easeInOut' },
+    ],
+  },
+  '3d-screen': {
+    duration: 16, defaultEasing: 'easeInOut', loopMode: 'pingpong',
+    entryAnim: 'none', exitAnim: 'none', entryDuration: 10, exitDuration: 10,
+    keyframes: [
+      { time: 0, scroll: 0, scale: 100, rotation: 0, tiltX: 1, tiltY: -6, posX: -10, posY: 0, easing: 'easeInOut' },
+      { time: 1, scroll: 100, scale: 100, rotation: 0, tiltX: 1, tiltY: 6, posX: 10, posY: 0, easing: 'easeInOut' },
     ],
   },
 };
@@ -1826,8 +1855,17 @@ const PRESETS = {
     bgType: 'gradient', gradColor1: '#dfdfdf', gradColor2: '#000000', gradAngle: 135,
     bgPattern: 'noise', patternOpacity: 7, patternSize: 20, patternColor: '#000000',
     cornerRadius: 12, placeholderSize: 65,
+    browserBarEnabled: true,
     borderWidth: 20, borderColor: '#ffffff', borderOpacity: 40,
     shadowType: 'contact', shadowStrength: 20, shadowLength: 150, shadowAngle: 135, shadowColor: '#000000',
+  },
+  'golden-hour': {
+    bgType: 'gradient', gradColor1: '#fffdf0', gradColor2: '#524d38', gradAngle: 135,
+    bgPattern: 'noise', patternOpacity: 7, patternSize: 20, patternColor: '#ffffff',
+    cornerRadius: 4, placeholderSize: 65,
+    browserBarEnabled: true, browserBarColor: '#f5f5f5', browserBarPillColor: '#ffffff',
+    borderWidth: 0,
+    shadowType: 'contact', shadowStrength: 50, shadowLength: 100, shadowAngle: 135, shadowColor: '#524d38',
   },
 };
 
